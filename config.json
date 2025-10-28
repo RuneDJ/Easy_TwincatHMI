@@ -25,7 +25,7 @@
   "manual_symbols": {
     "enabled": true,
     "auto_discovered": true,
-    "last_scan": "2025-10-28 12:15:15",
+    "last_scan": "2025-10-28 13:13:11",
     "symbols": {
       "GVL.DriftMode": {
         "category": "switch",
