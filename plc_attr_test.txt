@@ -98,3 +98,4 @@ to symbol comments, even after PLC update.
 
 SOLUTION: Continue using intelligent auto-scanner with name-based detection
 
+Press Enter to exit...

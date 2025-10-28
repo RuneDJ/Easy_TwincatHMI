@@ -22,6 +22,7 @@ from alarm_banner import AlarmBanner
 from alarm_history_window import AlarmHistoryWindow
 from gui_panels import SetpointPanel, ProcessValuePanel, SwitchPanel
 from symbol_auto_config import SymbolAutoConfig
+from tmc_config_generator import TMCConfigGenerator
 
 logging.basicConfig(
     level=logging.DEBUG,  # Changed to DEBUG for troubleshooting
@@ -316,6 +317,20 @@ class TwinCATHMI(QMainWindow):
         try:
             self.add_info_message('Søger efter symboler...')
             
+            # Check if TMC file is configured
+            tmc_file = self.config.get('tmc_file')
+            if tmc_file and Path(tmc_file).exists():
+                logger.info(f"Loading metadata from TMC file: {tmc_file}")
+                self.add_info_message('Loader metadata fra TMC fil...')
+                if self.load_from_tmc(tmc_file):
+                    return
+                else:
+                    logger.warning("Failed to load from TMC, falling back to auto-scan")
+                    self.add_info_message('TMC load fejlede, scanner PLC...')
+            elif tmc_file:
+                logger.warning(f"TMC file configured but not found: {tmc_file}")
+                self.add_info_message(f'TMC fil ikke fundet: {tmc_file}')
+            
             # Check if manual configuration exists and is not auto-discovered
             manual_symbols = self.config.get('manual_symbols', {})
             has_manual = manual_symbols.get('enabled', False) and manual_symbols.get('symbols')
@@ -378,6 +393,203 @@ class TwinCATHMI(QMainWindow):
         except Exception as e:
             logger.error(f"Symbol discovery error: {e}", exc_info=True)
             self.add_info_message(f'Fejl ved symbol søgning: {e}')
+    
+    def load_from_tmc(self, tmc_file: str) -> bool:
+        """
+        Load symbol configuration from TMC file
+        
+        Args:
+            tmc_file: Path to TMC file
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            logger.info(f"Parsing TMC file: {tmc_file}")
+            
+            # Parse TMC file
+            generator = TMCConfigGenerator(tmc_file)
+            tmc_config = generator.generate_config()
+            
+            # Get symbols from TMC
+            tmc_symbols = tmc_config.get('symbols', {})
+            
+            # Count total symbols
+            total_count = (len(tmc_symbols.get('setpoints', [])) +
+                          len(tmc_symbols.get('process_values', [])) +
+                          len(tmc_symbols.get('switches', [])) +
+                          len(tmc_symbols.get('alarms', [])))
+            
+            if total_count == 0:
+                logger.warning("No HMI symbols found in TMC file")
+                return False
+            
+            logger.info(f"Found {total_count} HMI symbols in TMC")
+            self.add_info_message(f'Fundet {total_count} HMI symboler i TMC fil')
+            
+            # Build symbol dict for parser
+            symbols = {}
+            
+            # Process setpoints
+            for sp in tmc_symbols.get('setpoints', []):
+                symbol_name = sp['name']
+                # Verify symbol exists in PLC
+                try:
+                    value = self.ads_client.read_symbol(symbol_name)
+                    if value is None:
+                        logger.warning(f"Setpoint {symbol_name} not found in PLC")
+                        continue
+                except Exception as e:
+                    logger.warning(f"Could not read setpoint {symbol_name}: {e}")
+                    continue
+                
+                # Build attributes string for parser
+                attrs = {
+                    'HMI_SP': True,
+                    'Unit': sp.get('unit', ''),
+                    'Min': str(sp.get('min', 0)),
+                    'Max': str(sp.get('max', 100)),
+                    'Decimals': str(sp.get('decimals', 2)),
+                    'Step': str(sp.get('step', 1))
+                }
+                
+                # Add alarm limits if present
+                if 'alarm_limits' in sp:
+                    limits = sp['alarm_limits']
+                    if 'high_high' in limits:
+                        attrs['AlarmHighHigh'] = str(limits['high_high'])
+                    if 'high' in limits:
+                        attrs['AlarmHigh'] = str(limits['high'])
+                    if 'low' in limits:
+                        attrs['AlarmLow'] = str(limits['low'])
+                    if 'low_low' in limits:
+                        attrs['AlarmLowLow'] = str(limits['low_low'])
+                    attrs['AlarmPriority'] = str(sp.get('alarm_priority', 3))
+                
+                symbols[symbol_name] = {
+                    'name': symbol_name,
+                    'data_type': 'REAL',
+                    'comment': f"TMC: Setpoint {sp.get('display_name', '')}",
+                    'attributes': attrs
+                }
+            
+            # Process process values
+            for pv in tmc_symbols.get('process_values', []):
+                symbol_name = pv['name']
+                try:
+                    value = self.ads_client.read_symbol(symbol_name)
+                    if value is None:
+                        logger.warning(f"Process value {symbol_name} not found in PLC")
+                        continue
+                except Exception as e:
+                    logger.warning(f"Could not read process value {symbol_name}: {e}")
+                    continue
+                
+                attrs = {
+                    'HMI_PV': True,
+                    'Unit': pv.get('unit', ''),
+                    'Decimals': str(pv.get('decimals', 2))
+                }
+                
+                # Add alarm limits if present
+                if 'alarm_limits' in pv:
+                    limits = pv['alarm_limits']
+                    if 'high_high' in limits:
+                        attrs['AlarmHighHigh'] = str(limits['high_high'])
+                    if 'high' in limits:
+                        attrs['AlarmHigh'] = str(limits['high'])
+                    if 'low' in limits:
+                        attrs['AlarmLow'] = str(limits['low'])
+                    if 'low_low' in limits:
+                        attrs['AlarmLowLow'] = str(limits['low_low'])
+                    attrs['AlarmPriority'] = str(pv.get('alarm_priority', 3))
+                
+                symbols[symbol_name] = {
+                    'name': symbol_name,
+                    'data_type': 'REAL',
+                    'comment': f"TMC: Process value {pv.get('display_name', '')}",
+                    'attributes': attrs
+                }
+            
+            # Process switches
+            for sw in tmc_symbols.get('switches', []):
+                symbol_name = sw['name']
+                try:
+                    value = self.ads_client.read_symbol(symbol_name)
+                    if value is None:
+                        logger.warning(f"Switch {symbol_name} not found in PLC")
+                        continue
+                except Exception as e:
+                    logger.warning(f"Could not read switch {symbol_name}: {e}")
+                    continue
+                
+                attrs = {'HMI_SWITCH': True}
+                
+                # Add position labels
+                positions = sw.get('positions', [])
+                for i, label in enumerate(positions):
+                    attrs[f'Pos{i}'] = label
+                
+                symbols[symbol_name] = {
+                    'name': symbol_name,
+                    'data_type': 'INT',
+                    'comment': f"TMC: Switch {sw.get('display_name', '')}",
+                    'attributes': attrs
+                }
+            
+            # Process alarms
+            for alarm in tmc_symbols.get('alarms', []):
+                symbol_name = alarm['name']
+                try:
+                    value = self.ads_client.read_symbol(symbol_name)
+                    if value is None:
+                        logger.warning(f"Alarm {symbol_name} not found in PLC")
+                        continue
+                except Exception as e:
+                    logger.warning(f"Could not read alarm {symbol_name}: {e}")
+                    continue
+                
+                attrs = {
+                    'HMI_ALARM': True,
+                    'AlarmText': alarm.get('text', symbol_name),
+                    'AlarmPriority': str(alarm.get('priority', 3))
+                }
+                
+                symbols[symbol_name] = {
+                    'name': symbol_name,
+                    'data_type': 'BOOL',
+                    'comment': f"TMC: Alarm {alarm.get('text', '')}",
+                    'attributes': attrs
+                }
+            
+            logger.info(f"Successfully built symbol dict with {len(symbols)} symbols")
+            
+            # Parse symbols
+            categorized = self.symbol_parser.parse_symbols(symbols)
+            
+            # Create UI elements
+            self.create_symbol_widgets(categorized)
+            
+            # Store symbols with alarms
+            self.symbol_configs = self.symbol_parser.get_symbols_with_alarms()
+            
+            info_msg = (f"Indlæst fra TMC ({len(symbols)} symboler):\n"
+                       f"  Setpunkter: {len(categorized['setpoint'])}\n"
+                       f"  Procesværdier: {len(categorized['process_value'])}\n"
+                       f"  Switches: {len(categorized['switch'])}\n"
+                       f"  Alarmer: {len(categorized['alarm'])}")
+            self.add_info_message(info_msg)
+            
+            return True
+            
+        except FileNotFoundError:
+            logger.error(f"TMC file not found: {tmc_file}")
+            self.add_info_message(f'TMC fil ikke fundet: {tmc_file}')
+            return False
+        except Exception as e:
+            logger.error(f"Error loading from TMC: {e}", exc_info=True)
+            self.add_info_message(f'Fejl ved TMC indlæsning: {e}')
+            return False
     
     def load_manual_symbols(self):
         """Load symbols from manual configuration"""

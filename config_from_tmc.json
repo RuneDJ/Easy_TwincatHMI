@@ -3,12 +3,6 @@
     "ams_net_id": "5.112.50.143.1.1",
     "port": 851
   },
-  "ads": {
-    "ams_net_id": "5.112.50.143.1.1",
-    "ams_port": 851,
-    "update_interval": 1.0
-  },
-  "tmc_file": "C:\\Users\\Rune\\Documents\\TcXaeShell\\Easy_TwincatHMI\\Easy_TwincatHMI\\PLC\\PLC.tmc",
   "auto_scan_on_start": false,
   "symbols": {
     "setpoints": [
@@ -177,26 +171,5 @@
         "priority": 4
       }
     ]
-  },
-  "alarms": {
-    "enabled": true,
-    "sound_enabled": true,
-    "blink_interval": 500,
-    "auto_acknowledge": false,
-    "log_to_csv": true
-  },
-  "symbol_search": {
-    "enabled": true,
-    "search_patterns": [
-      "HMI_SP",
-      "HMI_PV",
-      "HMI_SWITCH",
-      "HMI_ALARM"
-    ]
-  },
-  "gui": {
-    "window_title": "TwinCAT HMI",
-    "window_width": 1200,
-    "window_height": 800
   }
 }
