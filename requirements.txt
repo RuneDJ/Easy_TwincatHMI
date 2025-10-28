@@ -1,0 +1,4 @@
+pyads>=3.3.0
+matplotlib>=3.5.0
+PyQt5>=5.15.0
+pyqtgraph>=0.12.0

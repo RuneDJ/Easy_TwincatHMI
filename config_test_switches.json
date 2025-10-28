@@ -1,0 +1,169 @@
+{
+  "ads": {
+    "ams_net_id": "127.0.0.1.1.1",
+    "ams_port": 851,
+    "update_interval": 1.0
+  },
+  "alarms": {
+    "enabled": true,
+    "sound_enabled": true,
+    "blink_interval": 500,
+    "auto_acknowledge": false,
+    "log_to_csv": true,
+    "hysteresis_percent": 2.0
+  },
+  "symbol_search": {
+    "enabled": true,
+    "search_patterns": [
+      "HMI_SP",
+      "HMI_PV",
+      "HMI_SWITCH",
+      "HMI_ALARM"
+    ]
+  },
+  "gui": {
+    "window_title": "TwinCAT HMI",
+    "window_width": 1200,
+    "window_height": 800,
+    "alarm_banner_max_visible": 5
+  },
+  "manual_symbols": {
+    "enabled": true,
+    "auto_discovered": true,
+    "last_scan": "2025-10-28 11:41:18",
+    "symbols": {
+      "GVL.DriftMode": {
+        "category": "switch",
+        "unit": "m",
+        "positions": {
+          "0": "Stop",
+          "1": "Auto",
+          "2": "Manuel"
+        }
+      },
+      "GVL.FilterAdvarsel": {
+        "category": "alarm",
+        "unit": "m",
+        "alarm_text": "Filter warning",
+        "alarm_priority": 2
+      },
+      "GVL.Flow_1": {
+        "category": "process_value",
+        "unit": "m",
+        "decimals": 0,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "GVL.FlowSetpunkt": {
+        "category": "setpoint",
+        "unit": "s",
+        "decimals": 0,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "GVL.LavtOlieTryk": {
+        "category": "alarm",
+        "unit": "s",
+        "alarm_text": "Low oil pressure",
+        "alarm_priority": 4
+      },
+      "GVL.Motor1Fejl": {
+        "category": "alarm",
+        "unit": "m",
+        "alarm_text": "========================================",
+        "alarm_priority": 1
+      },
+      "GVL.Niveau_1": {
+        "category": "process_value",
+        "unit": "m",
+        "decimals": 0,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "GVL.NodStop": {
+        "category": "alarm",
+        "unit": "m",
+        "alarm_text": "Emergency stop",
+        "alarm_priority": 1
+      },
+      "GVL.Prioritet": {
+        "category": "switch",
+        "unit": "s",
+        "positions": {
+          "0": "Normal",
+          "1": "H\u00f8j",
+          "2": "Kritisk"
+        }
+      },
+      "GVL.PumpeValg": {
+        "category": "switch",
+        "unit": "m",
+        "positions": {
+          "0": "Fra",
+          "1": "Pumpe 1",
+          "2": "Pumpe 2",
+          "3": "Begge"
+        }
+      },
+      "GVL.Temperatur_1": {
+        "category": "process_value",
+        "unit": "\u00b0C",
+        "decimals": 0,
+        "min": 0,
+        "max": 200,
+        "step": 1
+      },
+      "GVL.Temperatur_2": {
+        "category": "process_value",
+        "unit": "m",
+        "decimals": 0,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "GVL.TemperaturSetpunkt": {
+        "category": "setpoint",
+        "unit": "\u00b0C",
+        "decimals": 0,
+        "min": 0,
+        "max": 200,
+        "step": 1,
+        "alarm_priority": 1
+      },
+      "GVL.TemperaturSetpunkt1": {
+        "category": "setpoint",
+        "unit": "\u00b0C",
+        "decimals": 0,
+        "min": 0,
+        "max": 200,
+        "step": 1,
+        "alarm_priority": 1
+      },
+      "GVL.Tryk_1": {
+        "category": "process_value",
+        "unit": "m",
+        "decimals": 0,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "GVL.TrykSetpunkt": {
+        "category": "setpoint",
+        "unit": "s",
+        "decimals": 0,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "GVL.VedligeholdPaamindelse": {
+        "category": "alarm",
+        "unit": "m",
+        "alarm_text": "Maintenance reminder",
+        "alarm_priority": 4
+      }
+    }
+  }
+}

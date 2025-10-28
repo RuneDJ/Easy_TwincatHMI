@@ -1,0 +1,100 @@
+﻿================================================================================
+TESTING ATTRIBUTE EXPORT FROM PLC
+================================================================================
+
+Γ£ô Connected to PLC
+
+Found 28 total symbols
+
+================================================================================
+DETAILED SYMBOL ANALYSIS
+================================================================================
+
+GVL.DriftMode
+--------------------------------------------------------------------------------
+Type: <class 'ctypes.c_short'>
+Comment length: 133 chars
+Category marker (HMI_SWITCH): Γ£ô FOUND
+  Γ£ù Pos0: NOT FOUND
+  Γ£ù Pos1: NOT FOUND
+  Γ£ù Pos2: NOT FOUND
+
+Comment excerpt (first 300 chars):
+========================================
+ SWITCHES (HMI_SWITCH)
+ ========================================
+ Operating mode selector
+
+GVL.Motor1Fejl
+--------------------------------------------------------------------------------
+Type: <class 'ctypes.c_bool'>
+Comment length: 143 chars
+Category marker (HMI_ALARM): Γ£ô FOUND
+  Γ£ù AlarmText: NOT FOUND
+  Γ£ù AlarmPriority: NOT FOUND
+
+Comment excerpt (first 300 chars):
+========================================
+ DIGITAL ALARMS (HMI_ALARM)
+ ========================================
+ Motor fault alarm
+ Critical
+
+GVL.Temperatur_1
+--------------------------------------------------------------------------------
+Type: <class 'ctypes.c_float'>
+Comment length: 263 chars
+Category marker (HMI_PV): Γ£ô FOUND
+  Γ£ù Unit: NOT FOUND
+  Γ£ù Decimals: NOT FOUND
+  Γ£ù AlarmHighHigh: NOT FOUND
+  Γ£ù AlarmHigh: NOT FOUND
+  Γ£ù AlarmLow: NOT FOUND
+
+Comment excerpt (first 300 chars):
+========================================
+ PROCESS VALUES (HMI_PV)
+ ========================================
+ Temperature process value with alarms
+ Critical high at 98├é┬░C
+ Warning high at 90├é┬░C
+ Warning low at 5├é┬░C
+ Critical low at 2├é┬░C
+ Critical priority
+
+GVL.TemperaturSetpunkt
+--------------------------------------------------------------------------------
+Type: <class 'ctypes.c_float'>
+Comment length: 159 chars
+Category marker (HMI_SP): Γ£ù NOT FOUND
+  Γ£ù Unit: NOT FOUND
+  Γ£ù Min: NOT FOUND
+  Γ£ù Max: NOT FOUND
+  Γ£ù Decimals: NOT FOUND
+  Γ£ù AlarmHighHigh: NOT FOUND
+  Γ£ù AlarmHigh: NOT FOUND
+
+Comment excerpt (first 300 chars):
+Temperature setpoint with alarms
+ Critical high alarm at 95├é┬░C
+ High alarm at 85├é┬░C
+ Low alarm at 10├é┬░C
+ Critical low alarm at 5├é┬░C
+ Priority 1 = Critical
+
+================================================================================
+SUMMARY
+================================================================================
+
+Tested symbols: 4
+With category markers: 3/4
+Expected attributes: 16
+Found attributes: 0/16
+
+Γ¥î NO ATTRIBUTES FOUND
+
+This means TwinCAT still does NOT export {attribute ...} lines
+to symbol comments, even after PLC update.
+
+SOLUTION: Continue using intelligent auto-scanner with name-based detection
+

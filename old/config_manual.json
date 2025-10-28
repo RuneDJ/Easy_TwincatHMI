@@ -1,0 +1,149 @@
+{
+  "ads": {
+    "ams_net_id": "5.112.50.143.1.1",
+    "ams_port": 851,
+    "update_interval": 1.0
+  },
+  "alarms": {
+    "enabled": true,
+    "sound_enabled": true,
+    "blink_interval": 500,
+    "auto_acknowledge": false,
+    "log_to_csv": true,
+    "hysteresis_percent": 2.0
+  },
+  "symbol_search": {
+    "enabled": true,
+    "search_patterns": [
+      "HMI_SP",
+      "HMI_PV",
+      "HMI_SWITCH",
+      "HMI_ALARM"
+    ]
+  },
+  "gui": {
+    "window_title": "TwinCAT HMI",
+    "window_width": 1200,
+    "window_height": 800,
+    "alarm_banner_max_visible": 5
+  },
+  "manual_symbols": {
+    "enabled": true,
+    "symbols": {
+      "GVL.TemperaturSetpunkt": {
+        "category": "setpoint",
+        "unit": "°C",
+        "min": 0,
+        "max": 100,
+        "decimals": 1,
+        "step": 0.5,
+        "alarm_high_high": 95,
+        "alarm_high": 85,
+        "alarm_low": 10,
+        "alarm_low_low": 5,
+        "alarm_priority": 1
+      },
+      "GVL.TrykSetpunkt": {
+        "category": "setpoint",
+        "unit": "bar",
+        "min": 0,
+        "max": 10,
+        "decimals": 2,
+        "alarm_high": 9.5
+      },
+      "GVL.FlowSetpunkt": {
+        "category": "setpoint",
+        "unit": "L/min",
+        "min": 0,
+        "max": 200,
+        "decimals": 1
+      },
+      "GVL.Temperatur_1": {
+        "category": "process_value",
+        "unit": "°C",
+        "decimals": 2,
+        "alarm_high_high": 98,
+        "alarm_high": 90,
+        "alarm_low": 5,
+        "alarm_low_low": 2,
+        "alarm_priority": 1
+      },
+      "GVL.Temperatur_2": {
+        "category": "process_value",
+        "unit": "°C",
+        "decimals": 2,
+        "alarm_high_high": 95,
+        "alarm_high": 85
+      },
+      "GVL.Tryk_1": {
+        "category": "process_value",
+        "unit": "bar",
+        "decimals": 2,
+        "alarm_high": 9.5,
+        "alarm_priority": 2
+      },
+      "GVL.Flow_1": {
+        "category": "process_value",
+        "unit": "L/min",
+        "decimals": 1,
+        "alarm_high": 180,
+        "alarm_low": 20
+      },
+      "GVL.Niveau_1": {
+        "category": "process_value",
+        "unit": "%",
+        "decimals": 1
+      },
+      "GVL.DriftMode": {
+        "category": "switch",
+        "positions": {
+          "0": "Stop",
+          "1": "Auto",
+          "2": "Manuel"
+        }
+      },
+      "GVL.PumpeValg": {
+        "category": "switch",
+        "positions": {
+          "0": "Off",
+          "1": "Pumpe 1",
+          "2": "Pumpe 2",
+          "3": "Begge"
+        }
+      },
+      "GVL.Prioritet": {
+        "category": "switch",
+        "positions": {
+          "0": "Normal",
+          "1": "Høj",
+          "2": "Kritisk"
+        }
+      },
+      "GVL.Motor1Fejl": {
+        "category": "alarm",
+        "alarm_text": "Motor 1 Fejl",
+        "alarm_priority": 1
+      },
+      "GVL.NodStop": {
+        "category": "alarm",
+        "alarm_text": "Nødstop Aktiveret",
+        "alarm_priority": 1
+      },
+      "GVL.LavtOlieTryk": {
+        "category": "alarm",
+        "alarm_text": "Lavt Olietryk",
+        "alarm_priority": 2
+      },
+      "GVL.FilterAdvarsel": {
+        "category": "alarm",
+        "alarm_text": "Filter Skal Skiftes",
+        "alarm_priority": 3
+      },
+      "GVL.VedligeholdPaamindelse": {
+        "category": "alarm",
+        "alarm_text": "Vedligehold Nødvendigt",
+        "alarm_priority": 4
+      }
+    }
+  }
+}

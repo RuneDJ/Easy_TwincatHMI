@@ -1,0 +1,118 @@
+{
+  "ads": {
+    "ams_net_id": "5.112.50.143.1.1",
+    "ams_port": 851,
+    "update_interval": 1.0
+  },
+  "auto_scan_on_start": true,
+  "alarms": {
+    "enabled": true,
+    "sound_enabled": true,
+    "blink_interval": 500,
+    "auto_acknowledge": false,
+    "log_to_csv": true,
+    "hysteresis_percent": 2.0
+  },
+  "symbol_search": {
+    "enabled": true,
+    "search_patterns": [
+      "HMI_SP",
+      "HMI_PV",
+      "HMI_SWITCH",
+      "HMI_ALARM"
+    ]
+  },
+  "gui": {
+    "window_title": "TwinCAT HMI",
+    "window_width": 1200,
+    "window_height": 800,
+    "alarm_banner_max_visible": 5
+  },
+  "manual_symbols": {
+    "enabled": true,
+    "auto_discovered": true,
+    "last_scan": "2025-10-28 10:41:33",
+    "symbols": {
+      "GVL.DriftMode": {
+        "category": "switch",
+        "unit": "m",
+        "positions": {
+          "0": "Pos 0",
+          "1": "Pos 1",
+          "2": "Pos 2"
+        }
+      },
+      "GVL.ErrorCount": {
+        "category": "alarm",
+        "alarm_text": "Error Count",
+        "alarm_priority": 2
+      },
+      "GVL.FilterAdvarsel": {
+        "category": "alarm",
+        "unit": "m",
+        "alarm_text": "Filter warning",
+        "alarm_priority": 2
+      },
+      "GVL.FlowSetpunkt": {
+        "category": "setpoint",
+        "unit": "s",
+        "decimals": 0,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      "GVL.Motor1Fejl": {
+        "category": "alarm",
+        "unit": "m",
+        "alarm_text": "========================================",
+        "alarm_priority": 1
+      },
+      "GVL.Niveau_1": {
+        "category": "alarm",
+        "unit": "m",
+        "alarm_text": "Level measurement (no alarms)",
+        "alarm_priority": 2
+      },
+      "GVL.Temperatur_1": {
+        "category": "process_value",
+        "unit": "\u00b0C",
+        "decimals": 0,
+        "min": 0,
+        "max": 200,
+        "step": 1
+      },
+      "GVL.TemperaturSetpunkt": {
+        "category": "setpoint",
+        "unit": "\u00b0C",
+        "decimals": 0,
+        "min": 0,
+        "max": 200,
+        "step": 1,
+        "alarm_priority": 1
+      },
+      "GVL.TemperaturSetpunkt1": {
+        "category": "setpoint",
+        "unit": "\u00b0C",
+        "decimals": 0,
+        "min": 0,
+        "max": 200,
+        "step": 1,
+        "alarm_priority": 1
+      },
+      "GVL.Tryk_1": {
+        "category": "alarm",
+        "unit": "m",
+        "alarm_text": "Pressure with high alarm only",
+        "alarm_priority": 2
+      },
+      "GVL.TrykSetpunkt": {
+        "category": "setpoint",
+        "unit": "s",
+        "decimals": 0,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      }
+    }
+  }
+}
