@@ -261,8 +261,12 @@ class SwitchWidget(QFrame):
         
         # Add positions
         positions = self.symbol_config.get('positions', {})
-        for pos_num in sorted(positions.keys()):
-            self.combo.addItem(positions[pos_num], pos_num)
+        # Sort by numeric value to handle both string and int keys
+        sorted_keys = sorted(positions.keys(), key=lambda x: int(x) if isinstance(x, str) else x)
+        for pos_num in sorted_keys:
+            # Convert pos_num to int for storage (handles both string and int keys)
+            pos_int = int(pos_num) if isinstance(pos_num, str) else pos_num
+            self.combo.addItem(positions[pos_num], pos_int)
         
         self.combo.currentIndexChanged.connect(self._on_selection_changed)
         layout.addWidget(self.combo)

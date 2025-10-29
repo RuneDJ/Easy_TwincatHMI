@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_HMI_Switch" Id="{12345678-1234-5678-1234-567812345013}">
+    <Declaration><![CDATA[TYPE ST_HMI_Switch :
+STRUCT
+	// Runtime værdi
+	Position        : INT := 0;          // Aktuel position (0-7)
+	
+	// Configuration
+	Config          : ST_SwitchConfig;   // Position labels
+	Display         : ST_DisplayConfig;  // Display info
+	
+	// Runtime status
+	PositionChanged : BOOL := FALSE;     // TRUE når position ændret
+	LastUpdateTime  : DT;                // Timestamp
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

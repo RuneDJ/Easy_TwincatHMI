@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="MAIN" Id="{12345678-1234-5678-1234-567812345031}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+	// Global HMI data instance
+	HMI : ST_HMI_Symbols;
+	
+	// Initialize HMI data
+	fbHmiInit : PRG_HMI_Init;
+	
+	// Test/Simulation variables
+	rSimCounter : REAL := 0.0;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// ============================================================================
+// INITIALIZE HMI DATA
+// ============================================================================
+fbHmiInit(HMI := HMI);
+
+// ============================================================================
+// RUNTIME LOGIC - TILFØJ DIN EGEN KODE HER
+// ============================================================================
+
+// Eksempel: Simuler sensor værdier (erstat med rigtige inputs)
+rSimCounter := rSimCounter + 0.1;
+IF rSimCounter > 10.0 THEN
+	rSimCounter := 0.0;
+END_IF
+
+HMI.Temperatur_1.Value := 20.0 + rSimCounter;
+HMI.Temperatur_2.Value := 24.0 + (rSimCounter * 0.5);
+HMI.Tryk_1.Value := 5.0 + (rSimCounter * 0.2);
+HMI.Flow_1.Value := 100.0 + (rSimCounter * 5.0);
+HMI.Niveau_1.Value := 50.0 + (rSimCounter * 2.0);
+
+// Beregn alarm status for Temperatur_1
+IF HMI.Temperatur_1.Value > HMI.Temperatur_1.AlarmLimits.AlarmHighHigh THEN
+	HMI.Temperatur_1.AlarmLimits.AlarmActive := TRUE;
+ELSIF HMI.Temperatur_1.Value > HMI.Temperatur_1.AlarmLimits.AlarmHigh THEN
+	HMI.Temperatur_1.AlarmLimits.AlarmActive := TRUE;
+	HMI.Temperatur_1.AlarmLimits.WarningActive := TRUE;
+ELSIF HMI.Temperatur_1.Value < HMI.Temperatur_1.AlarmLimits.AlarmLowLow THEN
+	HMI.Temperatur_1.AlarmLimits.AlarmActive := TRUE;
+ELSIF HMI.Temperatur_1.Value < HMI.Temperatur_1.AlarmLimits.AlarmLow THEN
+	HMI.Temperatur_1.AlarmLimits.AlarmActive := TRUE;
+	HMI.Temperatur_1.AlarmLimits.WarningActive := TRUE;
+ELSE
+	// Apply hysteresis
+	IF HMI.Temperatur_1.Value < (HMI.Temperatur_1.AlarmLimits.AlarmHigh - HMI.Temperatur_1.AlarmLimits.Hysteresis) AND
+	   HMI.Temperatur_1.Value > (HMI.Temperatur_1.AlarmLimits.AlarmLow + HMI.Temperatur_1.AlarmLimits.Hysteresis) THEN
+		HMI.Temperatur_1.AlarmLimits.AlarmActive := FALSE;
+		HMI.Temperatur_1.AlarmLimits.WarningActive := FALSE;
+	END_IF
+END_IF
+
+// Simuler digital alarm hver 5 sekunder
+IF rSimCounter > 5.0 THEN
+	HMI.Motor1Fejl.Active := TRUE;
+	IF NOT HMI.Motor1Fejl.Acknowledged THEN
+		HMI.Motor1Fejl.TriggerCount := HMI.Motor1Fejl.TriggerCount + 1;
+	END_IF
+ELSE
+	HMI.Motor1Fejl.Active := FALSE;
+	HMI.Motor1Fejl.Acknowledged := FALSE;
+END_IF
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

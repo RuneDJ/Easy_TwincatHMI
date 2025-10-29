@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_DisplayConfig" Id="{12345678-1234-5678-1234-567812345004}">
+    <Declaration><![CDATA[TYPE ST_DisplayConfig :
+STRUCT
+	DisplayName     : STRING(60) := '';  // Vises i HMI
+	Description     : STRING(120) := ''; // Detaljeret beskrivelse
+	Visible         : BOOL := TRUE;      // Skjul/vis i HMI
+	ReadOnly        : BOOL := FALSE;     // Disable write fra HMI
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

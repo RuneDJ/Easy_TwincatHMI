@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_AlarmLimits" Id="{12345678-1234-5678-1234-567812345002}">
+    <Declaration><![CDATA[TYPE ST_AlarmLimits :
+STRUCT
+	AlarmHighHigh   : REAL := 0.0;       // Kritisk høj alarm
+	AlarmHigh       : REAL := 0.0;       // Høj alarm
+	AlarmLow        : REAL := 0.0;       // Lav alarm
+	AlarmLowLow     : REAL := 0.0;       // Kritisk lav alarm
+	AlarmPriority   : USINT := 3;        // 1=Critical, 2=High, 3=Medium, 4=Low
+	AlarmActive     : BOOL := FALSE;     // TRUE hvis nogen alarm aktiv
+	WarningActive   : BOOL := FALSE;     // TRUE hvis warning (medium/low)
+	AlarmText       : STRING(80) := '';  // Alarm besked tekst
+	Hysteresis      : REAL := 0.5;       // Hysterese for alarm reset
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>
