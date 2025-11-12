@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_HMI_Symbols" Id="{12345678-1234-5678-1234-567812345020}">
+    <Declaration><![CDATA[TYPE ST_HMI_Symbols :
+STRUCT
+	// ========================================
+	// SETPOINTS
+	// ========================================
+	TemperaturSetpunkt  : ST_HMI_Setpoint;
+	TemperaturSetpunkt1 : ST_HMI_Setpoint;
+
+	TrykSetpunkt        : ST_HMI_Setpoint;
+	FlowSetpunkt        : ST_HMI_Setpoint;
+	
+	// ========================================
+	// PROCESS VALUES
+	// ========================================
+	Temperatur_1        : ST_HMI_ProcessValue;
+	Temperatur_2        : ST_HMI_ProcessValue;
+	Tryk_1              : ST_HMI_ProcessValue;
+	Flow_1              : ST_HMI_ProcessValue;
+	Niveau_1            : ST_HMI_ProcessValue;
+	
+	// ========================================
+	// SWITCHES
+	// ========================================
+	DriftMode           : ST_HMI_Switch;
+	PumpeValg           : ST_HMI_Switch;
+	Prioritet           : ST_HMI_Switch;
+	
+	// ========================================
+	// DIGITAL ALARMS
+	// ========================================
+	Motor1Fejl          : ST_HMI_Alarm;
+	NodStop             : ST_HMI_Alarm;
+	LavtOlieTryk        : ST_HMI_Alarm;
+	FilterAdvarsel      : ST_HMI_Alarm;
+	VedligeholdPaamindelse : ST_HMI_Alarm;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

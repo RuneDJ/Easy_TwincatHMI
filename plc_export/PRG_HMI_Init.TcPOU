@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="PRG_HMI_Init" Id="{12345678-1234-5678-1234-567812345030}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM PRG_HMI_Init
+VAR_IN_OUT
+	HMI : ST_HMI_Symbols;
+END_VAR
+VAR
+	bInitialized : BOOL := FALSE;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// ============================================================================
+// INITIALIZATION - Kaldes én gang ved opstart
+// ============================================================================
+IF NOT bInitialized THEN
+	bInitialized := TRUE;
+	
+	// ========================================
+	// TEMPERATUR SETPUNKT
+	// ========================================
+	HMI.TemperaturSetpunkt.Value := 25.0;
+	HMI.TemperaturSetpunkt.Config.Unit := '°C';
+	HMI.TemperaturSetpunkt.Config.nMin := 0.0;
+	HMI.TemperaturSetpunkt.Config.nMax := 100.0;
+	HMI.TemperaturSetpunkt.Config.Decimals := 1;
+	HMI.TemperaturSetpunkt.Config.Step := 0.5;
+	HMI.TemperaturSetpunkt.Display.DisplayName := 'Temperatur Setpunkt';
+	HMI.TemperaturSetpunkt.Display.Description := 'Ønsket temperatur for processen';
+	
+	HMI.TemperaturSetpunkt.AlarmLimits.AlarmHighHigh := 95.0;
+	HMI.TemperaturSetpunkt.AlarmLimits.AlarmHigh := 85.0;
+	HMI.TemperaturSetpunkt.AlarmLimits.AlarmLow := 10.0;
+	HMI.TemperaturSetpunkt.AlarmLimits.AlarmLowLow := 5.0;
+	HMI.TemperaturSetpunkt.AlarmLimits.AlarmPriority := 1;
+	HMI.TemperaturSetpunkt.AlarmLimits.Hysteresis := 1.0;
+	HMI.TemperaturSetpunkt.AlarmLimits.AlarmText := 'Temperatur setpunkt uden for grænser';
+	
+	// ========================================
+	// TRYK SETPUNKT
+	// ========================================
+	HMI.TrykSetpunkt.Value := 5.0;
+	HMI.TrykSetpunkt.Config.Unit := 'bar';
+	HMI.TrykSetpunkt.Config.nMin := 0.0;
+	HMI.TrykSetpunkt.Config.nMax := 10.0;
+	HMI.TrykSetpunkt.Config.Decimals := 2;
+	HMI.TrykSetpunkt.Config.Step := 0.1;
+	HMI.TrykSetpunkt.Display.DisplayName := 'Tryk Setpunkt';
+	
+	HMI.TrykSetpunkt.AlarmLimits.AlarmHigh := 9.5;
+	HMI.TrykSetpunkt.AlarmLimits.AlarmPriority := 3;
+	HMI.TrykSetpunkt.AlarmLimits.AlarmText := 'Tryk setpunkt for højt';
+	
+	// ========================================
+	// FLOW SETPUNKT
+	// ========================================
+	HMI.FlowSetpunkt.Value := 100.0;
+	HMI.FlowSetpunkt.Config.Unit := 'L/min';
+	HMI.FlowSetpunkt.Config.nMin := 0.0;
+	HMI.FlowSetpunkt.Config.nMax := 200.0;
+	HMI.FlowSetpunkt.Config.Decimals := 1;
+	HMI.FlowSetpunkt.Config.Step := 5.0;
+	HMI.FlowSetpunkt.Display.DisplayName := 'Flow Setpunkt';
+	
+	// ========================================
+	// TEMPERATUR MÅLING 1
+	// ========================================
+	HMI.Temperatur_1.Value := 23.5;
+	HMI.Temperatur_1.Config.Unit := '°C';
+	HMI.Temperatur_1.Config.Decimals := 2;
+	HMI.Temperatur_1.Display.DisplayName := 'Temperatur 1';
+	HMI.Temperatur_1.Display.Description := 'Indløbs temperatur måling';
+	
+	HMI.Temperatur_1.AlarmLimits.AlarmHighHigh := 98.0;
+	HMI.Temperatur_1.AlarmLimits.AlarmHigh := 90.0;
+	HMI.Temperatur_1.AlarmLimits.AlarmLow := 5.0;
+	HMI.Temperatur_1.AlarmLimits.AlarmLowLow := 2.0;
+	HMI.Temperatur_1.AlarmLimits.AlarmPriority := 1;
+	HMI.Temperatur_1.AlarmLimits.Hysteresis := 2.0;
+	HMI.Temperatur_1.AlarmLimits.AlarmText := 'Temperatur 1 alarm';
+	
+	// ========================================
+	// TEMPERATUR MÅLING 2
+	// ========================================
+	HMI.Temperatur_2.Value := 24.0;
+	HMI.Temperatur_2.Config.Unit := '°C';
+	HMI.Temperatur_2.Config.Decimals := 2;
+	HMI.Temperatur_2.Display.DisplayName := 'Temperatur 2';
+	
+	HMI.Temperatur_2.AlarmLimits.AlarmHighHigh := 95.0;
+	HMI.Temperatur_2.AlarmLimits.AlarmHigh := 85.0;
+	HMI.Temperatur_2.AlarmLimits.AlarmPriority := 3;
+	
+	// ========================================
+	// TRYK MÅLING
+	// ========================================
+	HMI.Tryk_1.Value := 5.0;
+	HMI.Tryk_1.Config.Unit := 'bar';
+	HMI.Tryk_1.Config.Decimals := 2;
+	HMI.Tryk_1.Display.DisplayName := 'Tryk 1';
+	
+	HMI.Tryk_1.AlarmLimits.AlarmHigh := 9.5;
+	HMI.Tryk_1.AlarmLimits.AlarmPriority := 2;
+	
+	// ========================================
+	// FLOW MÅLING
+	// ========================================
+	HMI.Flow_1.Value := 100.0;
+	HMI.Flow_1.Config.Unit := 'L/min';
+	HMI.Flow_1.Config.Decimals := 1;
+	HMI.Flow_1.Display.DisplayName := 'Flow 1';
+	
+	HMI.Flow_1.AlarmLimits.AlarmHigh := 180.0;
+	HMI.Flow_1.AlarmLimits.AlarmLow := 20.0;
+	HMI.Flow_1.AlarmLimits.AlarmPriority := 3;
+	
+	// ========================================
+	// NIVEAU MÅLING
+	// ========================================
+	HMI.Niveau_1.Value := 50.0;
+	HMI.Niveau_1.Config.Unit := '%';
+	HMI.Niveau_1.Config.Decimals := 1;
+	HMI.Niveau_1.Display.DisplayName := 'Niveau 1';
+	
+	// ========================================
+	// DRIFT MODE SWITCH
+	// ========================================
+	HMI.DriftMode.Position := 1;
+	HMI.DriftMode.Config.NumPositions := 3;
+	HMI.DriftMode.Config.Pos0_Label := 'Stop';
+	HMI.DriftMode.Config.Pos1_Label := 'Auto';
+	HMI.DriftMode.Config.Pos2_Label := 'Manuel';
+	HMI.DriftMode.Display.DisplayName := 'Drift Mode';
+	HMI.DriftMode.Display.Description := 'Vælg drifts tilstand';
+	
+	// ========================================
+	// PUMPE VALG SWITCH
+	// ========================================
+	HMI.PumpeValg.Position := 0;
+	HMI.PumpeValg.Config.NumPositions := 4;
+	HMI.PumpeValg.Config.Pos0_Label := 'Fra';
+	HMI.PumpeValg.Config.Pos1_Label := 'Pumpe 1';
+	HMI.PumpeValg.Config.Pos2_Label := 'Pumpe 2';
+	HMI.PumpeValg.Config.Pos3_Label := 'Begge';
+	HMI.PumpeValg.Display.DisplayName := 'Pumpe Valg';
+	
+	// ========================================
+	// PRIORITET SWITCH
+	// ========================================
+	HMI.Prioritet.Position := 0;
+	HMI.Prioritet.Config.NumPositions := 3;
+	HMI.Prioritet.Config.Pos0_Label := 'Normal';
+	HMI.Prioritet.Config.Pos1_Label := 'Høj';
+	HMI.Prioritet.Config.Pos2_Label := 'Kritisk';
+	HMI.Prioritet.Display.DisplayName := 'Prioritet';
+	
+	// ========================================
+	// MOTOR 1 FEJL ALARM
+	// ========================================
+	HMI.Motor1Fejl.Active := FALSE;
+	HMI.Motor1Fejl.AlarmText := 'Motor 1 Fejl';
+	HMI.Motor1Fejl.AlarmPriority := 1;
+	HMI.Motor1Fejl.Display.DisplayName := 'Motor 1 Fejl';
+	
+	// ========================================
+	// NØDSTOP ALARM
+	// ========================================
+	HMI.NodStop.Active := FALSE;
+	HMI.NodStop.AlarmText := 'Nødstop Aktiveret';
+	HMI.NodStop.AlarmPriority := 1;
+	HMI.NodStop.Display.DisplayName := 'Nødstop';
+	
+	// ========================================
+	// LAVT OLIETRYK ALARM
+	// ========================================
+	HMI.LavtOlieTryk.Active := FALSE;
+	HMI.LavtOlieTryk.AlarmText := 'Lavt Olietryk';
+	HMI.LavtOlieTryk.AlarmPriority := 2;
+	HMI.LavtOlieTryk.Display.DisplayName := 'Olie Tryk';
+	
+	// ========================================
+	// FILTER ADVARSEL
+	// ========================================
+	HMI.FilterAdvarsel.Active := FALSE;
+	HMI.FilterAdvarsel.AlarmText := 'Filter Skal Skiftes';
+	HMI.FilterAdvarsel.AlarmPriority := 3;
+	HMI.FilterAdvarsel.Display.DisplayName := 'Filter Status';
+	
+	// ========================================
+	// VEDLIGEHOLD PÅMINDELSE
+	// ========================================
+	HMI.VedligeholdPaamindelse.Active := FALSE;
+	HMI.VedligeholdPaamindelse.AlarmText := 'Vedligehold Nødvendigt';
+	HMI.VedligeholdPaamindelse.AlarmPriority := 4;
+	HMI.VedligeholdPaamindelse.Display.DisplayName := 'Vedligehold';
+END_IF
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

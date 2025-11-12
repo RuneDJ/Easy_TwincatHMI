@@ -7,6 +7,7 @@ import sys
 import json
 import logging
 from pathlib import Path
+import pyads
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QPushButton, QLabel, QLineEdit,
@@ -23,9 +24,7 @@ from alarm_history_window import AlarmHistoryWindow
 from gui_panels import SetpointPanel, ProcessValuePanel, SwitchPanel
 from symbol_auto_config import SymbolAutoConfig
 from tmc_config_generator import TMCConfigGenerator
-from hmi_attribute_scanner import HMIAttributeScanner, SymbolInfo
 from struct_reader import StructReader
-from hmi_symbol_widget import HMISymbolPanel
 
 logging.basicConfig(
     level=logging.DEBUG,  # Changed to DEBUG for troubleshooting
@@ -46,6 +45,7 @@ class TwinCATHMI(QMainWindow):
         # Initialize components
         self.ads_client = None
         self.symbol_parser = SymbolParser()
+        self.struct_reader = None  # Will be initialized after ADS connection
         self.alarm_manager = AlarmManager(self.config)
         self.alarm_logger = AlarmLogger()
         
@@ -296,17 +296,11 @@ class TwinCATHMI(QMainWindow):
                 self.connected = True
                 self.update_connection_ui(True)
                 
-                # Initialize struct_reader
+                # Initialize StructReader
                 self.struct_reader = StructReader(self.ads_client.plc)
                 
-                # Discover symbols - check auto-scan vs manual
-                if self.auto_scan_enabled:
-                    logger.info("Auto-scan enabled, discovering HMI symbols...")
-                    self.add_info_message('Auto-scan aktiveret...')
-                    self.discover_symbols_auto_scan()
-                else:
-                    # Use manual/legacy config
-                    self.discover_symbols()
+                # Discover symbols
+                self.discover_symbols()
                 
                 # Start update timer
                 update_interval = int(self.config['ads']['update_interval'] * 1000)
@@ -362,6 +356,13 @@ class TwinCATHMI(QMainWindow):
     def discover_symbols(self):
         """Discover and parse PLC symbols"""
         try:
+            # Check if using STRUCT-based approach
+            if self.config.get('use_structs', False):
+                logger.info("Using STRUCT-based symbol discovery")
+                self.add_info_message('Bruger STRUCT-baseret symbol læsning...')
+                self.discover_symbols_from_structs()
+                return
+            
             self.add_info_message('Søger efter symboler...')
             
             # Check if TMC file is configured
@@ -440,6 +441,121 @@ class TwinCATHMI(QMainWindow):
         except Exception as e:
             logger.error(f"Symbol discovery error: {e}", exc_info=True)
             self.add_info_message(f'Fejl ved symbol søgning: {e}')
+    
+    def discover_symbols_from_structs(self):
+        """Discover symbols from STRUCT configuration"""
+        try:
+            if not self.struct_reader:
+                logger.error("StructReader not initialized")
+                self.add_info_message('FEJL: StructReader ikke initialiseret')
+                return
+            
+            # Get STRUCT symbol configuration
+            struct_config = self.config.get('struct_symbols', {})
+            base_path = self.config.get('hmi_struct_path', 'MAIN.HMI')
+            
+            logger.info(f"Reading STRUCTs from {base_path}")
+            self.add_info_message(f'Læser STRUCTs fra {base_path}...')
+            
+            # Read all symbols
+            all_symbols = self.struct_reader.read_all_symbols(struct_config, base_path)
+            
+            if not all_symbols:
+                logger.warning("No STRUCT symbols found")
+                self.add_info_message('Ingen STRUCT symboler fundet')
+                return
+            
+            # Convert STRUCT data to widget format
+            categorized = {
+                'setpoint': [],
+                'process_value': [],
+                'switch': [],
+                'alarm': []
+            }
+            
+            for sym_name, sym_data in all_symbols.items():
+                sym_type = sym_data['type']
+                sym_path = sym_data['path']
+                data = sym_data['data']
+                
+                if sym_type == 'setpoint':
+                    categorized['setpoint'].append({
+                        'name': sym_path,
+                        'display_name': data['display']['name'] or sym_name,
+                        'unit': data['config']['unit'],
+                        'min': data['config']['min'],
+                        'max': data['config']['max'],
+                        'decimals': data['config']['decimals'],
+                        'step': data['config']['step'],
+                        'alarm_limits': {
+                            'high_high': data['alarm_limits']['high_high'],
+                            'high': data['alarm_limits']['high'],
+                            'low': data['alarm_limits']['low'],
+                            'low_low': data['alarm_limits']['low_low'],
+                        },
+                        'alarm_priority': data['alarm_limits']['priority'],
+                        'value': data['value']
+                    })
+                
+                elif sym_type == 'process_value':
+                    categorized['process_value'].append({
+                        'name': sym_path,
+                        'display_name': data['display']['name'] or sym_name,
+                        'unit': data['config']['unit'],
+                        'decimals': data['config']['decimals'],
+                        'alarm_limits': {
+                            'high_high': data['alarm_limits']['high_high'],
+                            'high': data['alarm_limits']['high'],
+                            'low': data['alarm_limits']['low'],
+                            'low_low': data['alarm_limits']['low_low'],
+                        },
+                        'alarm_priority': data['alarm_limits']['priority'],
+                        'value': data['value'],
+                        'quality': data['quality'],
+                        'sensor_fault': data['sensor_fault']
+                    })
+                
+                elif sym_type == 'switch':
+                    # Convert labels list to positions dict for GUI compatibility
+                    labels = data['config']['labels']
+                    positions_dict = {str(i): label for i, label in enumerate(labels)}
+                    
+                    categorized['switch'].append({
+                        'name': sym_path,
+                        'display_name': data['display']['name'] or sym_name,
+                        'positions': positions_dict,
+                        'value': data['position']
+                    })
+                
+                elif sym_type == 'alarm':
+                    categorized['alarm'].append({
+                        'name': sym_path,
+                        'display_name': data['display']['name'] or sym_name,
+                        'text': data['text'],
+                        'priority': data['priority'],
+                        'value': data['active']
+                    })
+            
+            # Create UI elements
+            self.create_symbol_widgets(categorized)
+            
+            # Store symbols for alarm monitoring
+            self.symbol_configs = []
+            for sym_data in categorized['setpoint'] + categorized['process_value']:
+                if 'alarm_limits' in sym_data:
+                    self.symbol_configs.append(sym_data)
+            
+            info_msg = (f"Læst {len(all_symbols)} STRUCT symboler:\n"
+                       f"  Setpunkter: {len(categorized['setpoint'])}\n"
+                       f"  Procesværdier: {len(categorized['process_value'])}\n"
+                       f"  Switches: {len(categorized['switch'])}\n"
+                       f"  Alarmer: {len(categorized['alarm'])}")
+            self.add_info_message(info_msg)
+            logger.info(f"Successfully loaded {len(all_symbols)} STRUCT symbols")
+            
+        except Exception as e:
+            logger.error(f"STRUCT symbol discovery error: {e}", exc_info=True)
+            self.add_info_message(f'FEJL ved STRUCT læsning: {e}')
     
     def load_from_tmc(self, tmc_file: str) -> bool:
         """
@@ -794,12 +910,23 @@ class TwinCATHMI(QMainWindow):
             return
         
         try:
-            if self.auto_scan_enabled and self.hmi_panel and self.struct_reader:
-                # New mode - read HMI structures directly
-                self.update_hmi_symbols()
-            else:
-                # Legacy mode
-                self.update_legacy_symbols()
+            # Check if using STRUCT-based approach
+            if self.config.get('use_structs', False) and self.struct_reader:
+                self.update_plc_data_structs()
+                return
+            
+            # Get all symbol names
+            all_symbols = []
+            
+            for category in self.symbol_parser.categorized_symbols.values():
+                all_symbols.extend([s['name'] for s in category])
+            
+            if not all_symbols:
+                return
+            
+            # Read values
+            values = self.ads_client.read_multiple_symbols(all_symbols)
+            self.current_values = values
             
         except Exception as e:
             logger.error(f"Update error: {e}")
@@ -880,6 +1007,53 @@ class TwinCATHMI(QMainWindow):
         # Update alarm indicators
         self.update_alarm_indicators()
     
+    def update_plc_data_structs(self):
+        """Update data from PLC using STRUCT approach"""
+        try:
+            struct_config = self.config.get('struct_symbols', {})
+            base_path = self.config.get('hmi_struct_path', 'MAIN.HMI')
+            
+            values = {}
+            
+            # Read setpoints
+            for sp_name in struct_config.get('setpoints', []):
+                full_path = f"{base_path}.{sp_name}"
+                value = self.ads_client.plc.read_by_name(f"{full_path}.Value", pyads.PLCTYPE_REAL)
+                values[full_path] = value
+                self.setpoint_panel.update_value(full_path, value)
+            
+            # Read process values
+            for pv_name in struct_config.get('process_values', []):
+                full_path = f"{base_path}.{pv_name}"
+                value = self.ads_client.plc.read_by_name(f"{full_path}.Value", pyads.PLCTYPE_REAL)
+                values[full_path] = value
+                self.pv_panel.update_value(full_path, value)
+            
+            # Read switches
+            for sw_name in struct_config.get('switches', []):
+                full_path = f"{base_path}.{sw_name}"
+                value = self.ads_client.plc.read_by_name(f"{full_path}.Position", pyads.PLCTYPE_INT)
+                values[full_path] = value
+                self.switch_panel.update_value(full_path, value)
+            
+            # Read alarms
+            for al_name in struct_config.get('alarms', []):
+                full_path = f"{base_path}.{al_name}"
+                value = self.ads_client.plc.read_by_name(f"{full_path}.Active", pyads.PLCTYPE_BOOL)
+                values[full_path] = value
+            
+            self.current_values = values
+            
+            # Check alarms
+            self.alarm_manager.check_alarms(values, self.symbol_configs)
+            
+            # Update alarm indicators
+            self.update_alarm_indicators()
+            
+        except Exception as e:
+            logger.error(f"STRUCT update error: {e}")
+            self.add_info_message(f'Fejl ved STRUCT opdatering: {e}')
+    
     def update_alarm_indicators(self):
         """Update alarm indicators on widgets"""
         active_alarms = self.alarm_manager.get_active_alarms()
@@ -920,15 +1094,12 @@ class TwinCATHMI(QMainWindow):
             return
         
         try:
-            # Try struct_reader first (for auto-scan symbols)
-            if self.struct_reader:
+            # Check if using STRUCT approach
+            if self.config.get('use_structs', False) and self.struct_reader:
                 success = self.struct_reader.write_setpoint_value(symbol_name, value)
-                if success:
-                    self.add_info_message(f'Skrev {value} til {symbol_name}')
-                    return
+            else:
+                success = self.ads_client.write_symbol(symbol_name, value)
             
-            # Fallback to ads_client
-            success = self.ads_client.write_symbol(symbol_name, value)
             if success:
                 self.add_info_message(f'Skrev {value} til {symbol_name}')
             else:
@@ -943,15 +1114,12 @@ class TwinCATHMI(QMainWindow):
             return
         
         try:
-            # Try struct_reader first (for auto-scan symbols)
-            if self.struct_reader:
+            # Check if using STRUCT approach
+            if self.config.get('use_structs', False) and self.struct_reader:
                 success = self.struct_reader.write_switch_position(symbol_name, position)
-                if success:
-                    self.add_info_message(f'Skiftede {symbol_name} til position {position}')
-                    return
+            else:
+                success = self.ads_client.write_symbol(symbol_name, position)
             
-            # Fallback to ads_client
-            success = self.ads_client.write_symbol(symbol_name, position)
             if success:
                 self.add_info_message(f'Skiftede {symbol_name} til position {position}')
         except Exception as e:

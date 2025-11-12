@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_SwitchConfig" Id="{12345678-1234-5678-1234-567812345003}">
+    <Declaration><![CDATA[TYPE ST_SwitchConfig :
+STRUCT
+	NumPositions    : USINT := 2;        // Antal positioner (2-8)
+	Pos0_Label      : STRING(40) := '';  // Label for position 0
+	Pos1_Label      : STRING(40) := '';  // Label for position 1
+	Pos2_Label      : STRING(40) := '';  // Label for position 2
+	Pos3_Label      : STRING(40) := '';  // Label for position 3
+	Pos4_Label      : STRING(40) := '';  // Label for position 4
+	Pos5_Label      : STRING(40) := '';  // Label for position 5
+	Pos6_Label      : STRING(40) := '';  // Label for position 6
+	Pos7_Label      : STRING(40) := '';  // Label for position 7
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

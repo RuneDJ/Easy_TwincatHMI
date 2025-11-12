@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="ST_HMI_Setpoint" Id="{12345678-1234-5678-1234-567812345011}">
+    <Declaration><![CDATA[TYPE ST_HMI_Setpoint :
+STRUCT
+	// Runtime værdi
+	Value           : REAL := 0.0;       // Aktuel setpoint værdi
+	
+	// Configuration
+	Config          : ST_NumericConfig;   // Unit, Min, Max, Decimals, Step
+	AlarmLimits     : ST_AlarmLimits;     // Alarm grænser og tekster
+	Display         : ST_DisplayConfig;   // Display navn og beskrivelse
+	
+	// Runtime status
+	ValueChanged    : BOOL := FALSE;     // TRUE når værdi ændret
+	LastUpdateTime  : DT;                // Timestamp for sidste ændring
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

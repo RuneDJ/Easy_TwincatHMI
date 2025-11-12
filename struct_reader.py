@@ -1,574 +1,330 @@
 """
-STRUCT Reader for TwinCAT HMI
-Reads ST_HMI_* structures from PLC via ADS
+struct_reader.py - Læser TwinCAT STRUCTs via ADS
 """
-
 import pyads
+from typing import Dict, Any, List, Optional
 import logging
-from typing import Dict, List, Optional, Any
 
 logger = logging.getLogger(__name__)
 
 
 class StructReader:
-    """
-    Reads TwinCAT STRUCT data via ADS with encoding support
-    """
+    """Read TwinCAT STRUCT data via ADS"""
     
-    def __init__(self, plc_connection: pyads.Connection):
+    def __init__(self, plc):
         """
-        Initialize reader with PLC connection
+        Initialize STRUCT reader
         
         Args:
-            plc_connection: Active pyads Connection object
+            plc: pyads.Connection object
         """
-        self.plc = plc_connection
+        self.plc = plc
     
-    def _read_string(self, symbol_path: str, max_length: int = 255) -> str:
+    def _read_string(self, path: str) -> str:
         """
-        Read string from PLC with encoding fallback
+        Helper function to read STRING with proper encoding handling
         
         Args:
-            symbol_path: Full path to string variable
-            max_length: Maximum string length
+            path: Full symbol path to string
             
         Returns:
-            Decoded string
+            Decoded string value
         """
         try:
-            # Try UTF-8 first
-            data = self.plc.read_by_name(symbol_path, pyads.PLCTYPE_STRING)
-            return data
+            return self.plc.read_by_name(path, pyads.PLCTYPE_STRING)
         except UnicodeDecodeError:
-            # Fallback to Windows-1252 for Danish characters
+            # TwinCAT uses Windows-1252 encoding for special characters
             try:
-                raw_data = self.plc.read_by_name(symbol_path, pyads.PLCTYPE_STRING)
-                if isinstance(raw_data, bytes):
-                    return raw_data.decode('windows-1252')
-                return str(raw_data)
-            except Exception as e:
-                logger.warning(f"Failed to decode string from {symbol_path}: {e}")
+                raw_bytes = self.plc.read(self.plc.get_handle(path), pyads.PLCTYPE_STRING)
+                if isinstance(raw_bytes, bytes):
+                    # Decode with windows-1252 and remove null terminator
+                    return raw_bytes.split(b'\x00')[0].decode('windows-1252', errors='replace')
+                return str(raw_bytes)
+            except:
                 return ""
-        except Exception as e:
-            logger.warning(f"Failed to read string from {symbol_path}: {e}")
+        except:
             return ""
     
-    def read_setpoint(self, base_path: str) -> Dict[str, Any]:
+    def read_setpoint(self, symbol_path: str) -> Optional[Dict[str, Any]]:
         """
-        Read ST_HMI_Setpoint structure
+        Read ST_HMI_Setpoint STRUCT
         
         Args:
-            base_path: Base path to setpoint (e.g., "MAIN.HMI.TemperaturSetpunkt")
+            symbol_path: Full symbol path (e.g., "MAIN.HMI.TemperaturSetpunkt")
             
         Returns:
-            Dictionary with setpoint data
+            Dict with value and all config fields
         """
         try:
-            data = {
-                'name': base_path,
-                'value': 0.0,
+            result = {
+                'value': self.plc.read_by_name(f"{symbol_path}.Value", pyads.PLCTYPE_REAL),
                 'config': {
-                    'min': 0.0,
-                    'max': 100.0,
-                    'unit': '',
-                    'decimals': 1,
-                    'step': 1.0
+                    'unit': self._read_string(f"{symbol_path}.Config.Unit"),
+                    'min': self.plc.read_by_name(f"{symbol_path}.Config.nMin", pyads.PLCTYPE_REAL),
+                    'max': self.plc.read_by_name(f"{symbol_path}.Config.nMax", pyads.PLCTYPE_REAL),
+                    'decimals': self.plc.read_by_name(f"{symbol_path}.Config.Decimals", pyads.PLCTYPE_USINT),
+                    'step': self.plc.read_by_name(f"{symbol_path}.Config.Step", pyads.PLCTYPE_REAL),
                 },
                 'alarm_limits': {
-                    'high_high': None,
-                    'high': None,
-                    'low': None,
-                    'low_low': None,
-                    'hysteresis': 0.0,
-                    'alarm_active': False,
-                    'warning_active': False
+                    'high_high': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.AlarmHighHigh", pyads.PLCTYPE_REAL),
+                    'high': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.AlarmHigh", pyads.PLCTYPE_REAL),
+                    'low': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.AlarmLow", pyads.PLCTYPE_REAL),
+                    'low_low': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.AlarmLowLow", pyads.PLCTYPE_REAL),
+                    'priority': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.AlarmPriority", pyads.PLCTYPE_USINT),
+                    'active': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.AlarmActive", pyads.PLCTYPE_BOOL),
+                    'warning': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.WarningActive", pyads.PLCTYPE_BOOL),
+                    'text': self._read_string(f"{symbol_path}.AlarmLimits.AlarmText"),
+                    'hysteresis': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.Hysteresis", pyads.PLCTYPE_REAL),
                 },
                 'display': {
-                    'display_name': '',
-                    'description': '',
-                    'visible': True,
-                    'read_only': False
+                    'name': self._read_string(f"{symbol_path}.Display.DisplayName"),
+                    'description': self._read_string(f"{symbol_path}.Display.Description"),
+                    'visible': self.plc.read_by_name(f"{symbol_path}.Display.Visible", pyads.PLCTYPE_BOOL),
+                    'readonly': self.plc.read_by_name(f"{symbol_path}.Display.ReadOnly", pyads.PLCTYPE_BOOL),
                 }
             }
             
-            # Read Value
-            try:
-                data['value'] = self.plc.read_by_name(f"{base_path}.Value", pyads.PLCTYPE_REAL)
-            except Exception as e:
-                logger.debug(f"Failed to read {base_path}.Value: {e}")
-            
-            # Read Config (note: nMin/nMax in PLC)
-            try:
-                data['config']['min'] = self.plc.read_by_name(f"{base_path}.Config.nMin", pyads.PLCTYPE_REAL)
-            except Exception as e:
-                logger.debug(f"Failed to read {base_path}.Config.nMin: {e}")
-            
-            try:
-                data['config']['max'] = self.plc.read_by_name(f"{base_path}.Config.nMax", pyads.PLCTYPE_REAL)
-            except Exception as e:
-                logger.debug(f"Failed to read {base_path}.Config.nMax: {e}")
-            
-            try:
-                data['config']['unit'] = self._read_string(f"{base_path}.Config.Unit")
-            except Exception as e:
-                logger.debug(f"Failed to read {base_path}.Config.Unit: {e}")
-            
-            try:
-                data['config']['decimals'] = self.plc.read_by_name(f"{base_path}.Config.Decimals", pyads.PLCTYPE_USINT)
-            except Exception as e:
-                logger.debug(f"Failed to read {base_path}.Config.Decimals: {e}")
-            
-            try:
-                data['config']['step'] = self.plc.read_by_name(f"{base_path}.Config.Step", pyads.PLCTYPE_REAL)
-            except Exception as e:
-                logger.debug(f"Failed to read {base_path}.Config.Step: {e}")
-            
-            # Read AlarmLimits
-            try:
-                data['alarm_limits']['high_high'] = self.plc.read_by_name(f"{base_path}.AlarmLimits.AlarmHighHigh", pyads.PLCTYPE_REAL)
-            except:
-                pass
-            
-            try:
-                data['alarm_limits']['high'] = self.plc.read_by_name(f"{base_path}.AlarmLimits.AlarmHigh", pyads.PLCTYPE_REAL)
-            except:
-                pass
-            
-            try:
-                data['alarm_limits']['low'] = self.plc.read_by_name(f"{base_path}.AlarmLimits.AlarmLow", pyads.PLCTYPE_REAL)
-            except:
-                pass
-            
-            try:
-                data['alarm_limits']['low_low'] = self.plc.read_by_name(f"{base_path}.AlarmLimits.AlarmLowLow", pyads.PLCTYPE_REAL)
-            except:
-                pass
-            
-            try:
-                data['alarm_limits']['hysteresis'] = self.plc.read_by_name(f"{base_path}.AlarmLimits.Hysteresis", pyads.PLCTYPE_REAL)
-            except:
-                pass
-            
-            try:
-                data['alarm_limits']['alarm_active'] = self.plc.read_by_name(f"{base_path}.AlarmLimits.AlarmActive", pyads.PLCTYPE_BOOL)
-            except:
-                pass
-            
-            try:
-                data['alarm_limits']['warning_active'] = self.plc.read_by_name(f"{base_path}.AlarmLimits.WarningActive", pyads.PLCTYPE_BOOL)
-            except:
-                pass
-            
-            # Read Display
-            try:
-                data['display']['display_name'] = self._read_string(f"{base_path}.Display.DisplayName")
-            except Exception as e:
-                logger.debug(f"Failed to read {base_path}.Display.DisplayName: {e}")
-            
-            try:
-                data['display']['description'] = self._read_string(f"{base_path}.Display.Description")
-            except:
-                pass
-            
-            try:
-                data['display']['visible'] = self.plc.read_by_name(f"{base_path}.Display.Visible", pyads.PLCTYPE_BOOL)
-            except:
-                pass
-            
-            try:
-                data['display']['read_only'] = self.plc.read_by_name(f"{base_path}.Display.ReadOnly", pyads.PLCTYPE_BOOL)
-            except:
-                pass
-            
-            return data
+            logger.debug(f"Read setpoint {symbol_path}: {result['value']} {result['config']['unit']}")
+            return result
             
         except Exception as e:
-            logger.error(f"Failed to read setpoint {base_path}: {e}")
+            logger.error(f"Error reading setpoint {symbol_path}: {e}")
             return None
     
-    def read_process_value(self, base_path: str) -> Dict[str, Any]:
+    def read_process_value(self, symbol_path: str) -> Optional[Dict[str, Any]]:
         """
-        Read ST_HMI_ProcessValue structure
+        Read ST_HMI_ProcessValue STRUCT
         
         Args:
-            base_path: Base path to process value
+            symbol_path: Full symbol path (e.g., "MAIN.HMI.Temperatur_1")
             
         Returns:
-            Dictionary with process value data
+            Dict with value and config fields
         """
         try:
-            data = {
-                'name': base_path,
-                'value': 0.0,
+            result = {
+                'value': self.plc.read_by_name(f"{symbol_path}.Value", pyads.PLCTYPE_REAL),
                 'config': {
-                    'min': 0.0,
-                    'max': 100.0,
-                    'unit': '',
-                    'decimals': 1,
-                    'step': 1.0
+                    'unit': self._read_string(f"{symbol_path}.Config.Unit"),
+                    'decimals': self.plc.read_by_name(f"{symbol_path}.Config.Decimals", pyads.PLCTYPE_USINT),
+                    'min': self.plc.read_by_name(f"{symbol_path}.Config.nMin", pyads.PLCTYPE_REAL),
+                    'max': self.plc.read_by_name(f"{symbol_path}.Config.nMax", pyads.PLCTYPE_REAL),
+                    'step': self.plc.read_by_name(f"{symbol_path}.Config.Step", pyads.PLCTYPE_REAL),
                 },
                 'alarm_limits': {
-                    'high_high': None,
-                    'high': None,
-                    'low': None,
-                    'low_low': None,
-                    'hysteresis': 0.0,
-                    'alarm_active': False,
-                    'warning_active': False
+                    'high_high': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.AlarmHighHigh", pyads.PLCTYPE_REAL),
+                    'high': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.AlarmHigh", pyads.PLCTYPE_REAL),
+                    'low': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.AlarmLow", pyads.PLCTYPE_REAL),
+                    'low_low': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.AlarmLowLow", pyads.PLCTYPE_REAL),
+                    'priority': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.AlarmPriority", pyads.PLCTYPE_USINT),
+                    'active': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.AlarmActive", pyads.PLCTYPE_BOOL),
+                    'warning': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.WarningActive", pyads.PLCTYPE_BOOL),
+                    'text': self._read_string(f"{symbol_path}.AlarmLimits.AlarmText"),
+                    'hysteresis': self.plc.read_by_name(f"{symbol_path}.AlarmLimits.Hysteresis", pyads.PLCTYPE_REAL),
                 },
                 'display': {
-                    'display_name': '',
-                    'description': '',
-                    'visible': True,
-                    'read_only': True
+                    'name': self._read_string(f"{symbol_path}.Display.DisplayName"),
+                    'description': self._read_string(f"{symbol_path}.Display.Description"),
+                    'visible': self.plc.read_by_name(f"{symbol_path}.Display.Visible", pyads.PLCTYPE_BOOL),
+                    'readonly': self.plc.read_by_name(f"{symbol_path}.Display.ReadOnly", pyads.PLCTYPE_BOOL),
                 },
-                'quality': 'Unknown',
-                'sensor_fault': False
+                'quality': self.plc.read_by_name(f"{symbol_path}.Quality", pyads.PLCTYPE_USINT),
+                'sensor_fault': self.plc.read_by_name(f"{symbol_path}.SensorFault", pyads.PLCTYPE_BOOL),
             }
             
-            # Read Value
-            try:
-                data['value'] = self.plc.read_by_name(f"{base_path}.Value", pyads.PLCTYPE_REAL)
-            except Exception as e:
-                logger.debug(f"Failed to read {base_path}.Value: {e}")
-            
-            # Read Config
-            try:
-                data['config']['min'] = self.plc.read_by_name(f"{base_path}.Config.nMin", pyads.PLCTYPE_REAL)
-            except:
-                pass
-            
-            try:
-                data['config']['max'] = self.plc.read_by_name(f"{base_path}.Config.nMax", pyads.PLCTYPE_REAL)
-            except:
-                pass
-            
-            try:
-                data['config']['unit'] = self._read_string(f"{base_path}.Config.Unit")
-            except:
-                pass
-            
-            try:
-                data['config']['decimals'] = self.plc.read_by_name(f"{base_path}.Config.Decimals", pyads.PLCTYPE_USINT)
-            except:
-                pass
-            
-            # Read AlarmLimits (same as setpoint)
-            try:
-                data['alarm_limits']['high_high'] = self.plc.read_by_name(f"{base_path}.AlarmLimits.AlarmHighHigh", pyads.PLCTYPE_REAL)
-            except:
-                pass
-            
-            try:
-                data['alarm_limits']['high'] = self.plc.read_by_name(f"{base_path}.AlarmLimits.AlarmHigh", pyads.PLCTYPE_REAL)
-            except:
-                pass
-            
-            try:
-                data['alarm_limits']['low'] = self.plc.read_by_name(f"{base_path}.AlarmLimits.AlarmLow", pyads.PLCTYPE_REAL)
-            except:
-                pass
-            
-            try:
-                data['alarm_limits']['low_low'] = self.plc.read_by_name(f"{base_path}.AlarmLimits.AlarmLowLow", pyads.PLCTYPE_REAL)
-            except:
-                pass
-            
-            # Read Display
-            try:
-                data['display']['display_name'] = self._read_string(f"{base_path}.Display.DisplayName")
-            except:
-                pass
-            
-            try:
-                data['display']['description'] = self._read_string(f"{base_path}.Display.Description")
-            except:
-                pass
-            
-            try:
-                data['display']['visible'] = self.plc.read_by_name(f"{base_path}.Display.Visible", pyads.PLCTYPE_BOOL)
-            except:
-                pass
-            
-            # Read Quality and SensorFault
-            try:
-                quality_int = self.plc.read_by_name(f"{base_path}.Quality", pyads.PLCTYPE_USINT)
-                quality_map = {0: 'Bad', 1: 'Uncertain', 2: 'Good'}
-                data['quality'] = quality_map.get(quality_int, 'Unknown')
-            except:
-                pass
-            
-            try:
-                data['sensor_fault'] = self.plc.read_by_name(f"{base_path}.SensorFault", pyads.PLCTYPE_BOOL)
-            except:
-                pass
-            
-            return data
+            logger.debug(f"Read process value {symbol_path}: {result['value']} {result['config']['unit']}")
+            return result
             
         except Exception as e:
-            logger.error(f"Failed to read process value {base_path}: {e}")
+            logger.error(f"Error reading process value {symbol_path}: {e}")
             return None
     
-    def read_switch(self, base_path: str) -> Dict[str, Any]:
+    def read_switch(self, symbol_path: str) -> Optional[Dict[str, Any]]:
         """
-        Read ST_HMI_Switch structure
+        Read ST_HMI_Switch STRUCT
         
         Args:
-            base_path: Base path to switch
+            symbol_path: Full symbol path (e.g., "MAIN.HMI.DriftMode")
             
         Returns:
-            Dictionary with switch data
+            Dict with position and labels
         """
         try:
-            data = {
-                'name': base_path,
-                'position': 0,
-                'config': {
-                    'num_positions': 2,
-                    'labels': []
-                },
-                'display': {
-                    'display_name': '',
-                    'description': '',
-                    'visible': True,
-                    'read_only': False
-                },
-                'positions': {}  # For GUI compatibility
-            }
+            num_pos = self.plc.read_by_name(f"{symbol_path}.Config.NumPositions", pyads.PLCTYPE_USINT)
             
-            # Read Position
-            try:
-                data['position'] = self.plc.read_by_name(f"{base_path}.Position", pyads.PLCTYPE_INT)
-            except Exception as e:
-                logger.debug(f"Failed to read {base_path}.Position: {e}")
-            
-            # Read Config
-            try:
-                data['config']['num_positions'] = self.plc.read_by_name(f"{base_path}.Config.NumPositions", pyads.PLCTYPE_USINT)
-            except:
-                pass
-            
-            # Read position labels (Pos0_Label through Pos7_Label)
+            # Læs labels for alle positioner
             labels = []
-            for i in range(8):
+            for i in range(min(num_pos, 8)):  # Max 8 positions
                 try:
-                    label = self._read_string(f"{base_path}.Config.Pos{i}_Label")
-                    if label:  # Only add non-empty labels
-                        labels.append(label)
+                    label = self._read_string(f"{symbol_path}.Config.Pos{i}_Label")
+                    labels.append(label)
                 except:
-                    break
+                    labels.append(f"Pos {i}")
             
-            data['config']['labels'] = labels
-            
-            # Convert labels list to positions dict for GUI compatibility
-            data['positions'] = {str(i): label for i, label in enumerate(labels)}
-            
-            # Read Display
-            try:
-                data['display']['display_name'] = self._read_string(f"{base_path}.Display.DisplayName")
-            except:
-                pass
-            
-            try:
-                data['display']['description'] = self._read_string(f"{base_path}.Display.Description")
-            except:
-                pass
-            
-            try:
-                data['display']['visible'] = self.plc.read_by_name(f"{base_path}.Display.Visible", pyads.PLCTYPE_BOOL)
-            except:
-                pass
-            
-            try:
-                data['display']['read_only'] = self.plc.read_by_name(f"{base_path}.Display.ReadOnly", pyads.PLCTYPE_BOOL)
-            except:
-                pass
-            
-            return data
-            
-        except Exception as e:
-            logger.error(f"Failed to read switch {base_path}: {e}")
-            return None
-    
-    def read_alarm(self, base_path: str) -> Dict[str, Any]:
-        """
-        Read ST_HMI_Alarm structure
-        
-        Args:
-            base_path: Base path to alarm
-            
-        Returns:
-            Dictionary with alarm data
-        """
-        try:
-            data = {
-                'name': base_path,
-                'active': False,
-                'text': '',
-                'priority': 3,
-                'acknowledged': False,
-                'timestamp': None,
+            result = {
+                'position': self.plc.read_by_name(f"{symbol_path}.Position", pyads.PLCTYPE_INT),
+                'config': {
+                    'num_positions': num_pos,
+                    'labels': labels,
+                },
                 'display': {
-                    'display_name': '',
-                    'description': '',
-                    'visible': True,
-                    'read_only': True
-                }
+                    'name': self._read_string(f"{symbol_path}.Display.DisplayName"),
+                    'description': self._read_string(f"{symbol_path}.Display.Description"),
+                    'visible': self.plc.read_by_name(f"{symbol_path}.Display.Visible", pyads.PLCTYPE_BOOL),
+                    'readonly': self.plc.read_by_name(f"{symbol_path}.Display.ReadOnly", pyads.PLCTYPE_BOOL),
+                },
             }
             
-            # Read Active
-            try:
-                data['active'] = self.plc.read_by_name(f"{base_path}.Active", pyads.PLCTYPE_BOOL)
-            except Exception as e:
-                logger.debug(f"Failed to read {base_path}.Active: {e}")
-            
-            # Read AlarmText
-            try:
-                data['text'] = self._read_string(f"{base_path}.AlarmText")
-            except:
-                pass
-            
-            # Read Priority
-            try:
-                data['priority'] = self.plc.read_by_name(f"{base_path}.AlarmPriority", pyads.PLCTYPE_USINT)
-            except:
-                pass
-            
-            # Read Acknowledged
-            try:
-                data['acknowledged'] = self.plc.read_by_name(f"{base_path}.Acknowledged", pyads.PLCTYPE_BOOL)
-            except:
-                pass
-            
-            # Read Display
-            try:
-                data['display']['display_name'] = self._read_string(f"{base_path}.Display.DisplayName")
-            except:
-                pass
-            
-            try:
-                data['display']['description'] = self._read_string(f"{base_path}.Display.Description")
-            except:
-                pass
-            
-            try:
-                data['display']['visible'] = self.plc.read_by_name(f"{base_path}.Display.Visible", pyads.PLCTYPE_BOOL)
-            except:
-                pass
-            
-            # Read Timestamp (if available)
-            try:
-                timestamp = self.plc.read_by_name(f"{base_path}.TriggerTime", pyads.PLCTYPE_DT)
-                data['timestamp'] = timestamp
-            except:
-                pass
-            
-            return data
+            logger.debug(f"Read switch {symbol_path}: pos={result['position']}, labels={labels}")
+            return result
             
         except Exception as e:
-            logger.error(f"Failed to read alarm {base_path}: {e}")
+            logger.error(f"Error reading switch {symbol_path}: {e}")
             return None
     
-    def write_setpoint_value(self, base_path: str, value: float) -> bool:
+    def read_alarm(self, symbol_path: str) -> Optional[Dict[str, Any]]:
         """
-        Write value to setpoint
+        Read ST_HMI_Alarm STRUCT
         
         Args:
-            base_path: Base path to setpoint
-            value: New value
+            symbol_path: Full symbol path (e.g., "MAIN.HMI.Motor1Fejl")
+            
+        Returns:
+            Dict with alarm status
+        """
+        try:
+            result = {
+                'active': self.plc.read_by_name(f"{symbol_path}.Active", pyads.PLCTYPE_BOOL),
+                'text': self._read_string(f"{symbol_path}.AlarmText"),
+                'priority': self.plc.read_by_name(f"{symbol_path}.AlarmPriority", pyads.PLCTYPE_USINT),
+                'acknowledged': self.plc.read_by_name(f"{symbol_path}.Acknowledged", pyads.PLCTYPE_BOOL),
+                'trigger_count': self.plc.read_by_name(f"{symbol_path}.TriggerCount", pyads.PLCTYPE_UDINT),
+                'display': {
+                    'name': self._read_string(f"{symbol_path}.Display.DisplayName"),
+                    'description': self._read_string(f"{symbol_path}.Display.Description"),
+                    'visible': self.plc.read_by_name(f"{symbol_path}.Display.Visible", pyads.PLCTYPE_BOOL),
+                },
+            }
+            
+            logger.debug(f"Read alarm {symbol_path}: active={result['active']}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error reading alarm {symbol_path}: {e}")
+            return None
+    
+    def write_setpoint_value(self, symbol_path: str, value: float) -> bool:
+        """
+        Write setpoint value
+        
+        Args:
+            symbol_path: Full symbol path
+            value: New value to write
             
         Returns:
             True if successful
         """
         try:
-            self.plc.write_by_name(f"{base_path}.Value", value, pyads.PLCTYPE_REAL)
-            logger.info(f"Wrote {value} to {base_path}.Value")
+            self.plc.write_by_name(f"{symbol_path}.Value", value, pyads.PLCTYPE_REAL)
+            logger.info(f"Wrote setpoint {symbol_path}.Value = {value}")
             return True
         except Exception as e:
-            logger.error(f"Failed to write to {base_path}.Value: {e}")
+            logger.error(f"Error writing setpoint {symbol_path}: {e}")
             return False
     
-    def write_switch_position(self, base_path: str, position: int) -> bool:
+    def write_switch_position(self, symbol_path: str, position: int) -> bool:
         """
-        Write position to switch
+        Write switch position
         
         Args:
-            base_path: Base path to switch
-            position: New position
+            symbol_path: Full symbol path
+            position: New position (0-7)
             
         Returns:
             True if successful
         """
         try:
-            self.plc.write_by_name(f"{base_path}.Position", position, pyads.PLCTYPE_INT)
-            logger.info(f"Wrote position {position} to {base_path}.Position")
+            self.plc.write_by_name(f"{symbol_path}.Position", position, pyads.PLCTYPE_INT)
+            logger.info(f"Wrote switch {symbol_path}.Position = {position}")
             return True
         except Exception as e:
-            logger.error(f"Failed to write to {base_path}.Position: {e}")
+            logger.error(f"Error writing switch {symbol_path}: {e}")
             return False
     
-    def acknowledge_alarm(self, base_path: str) -> bool:
+    def acknowledge_alarm(self, symbol_path: str) -> bool:
         """
-        Acknowledge an alarm
+        Acknowledge alarm
         
         Args:
-            base_path: Base path to alarm
+            symbol_path: Full symbol path
             
         Returns:
             True if successful
         """
         try:
-            self.plc.write_by_name(f"{base_path}.Acknowledged", True, pyads.PLCTYPE_BOOL)
-            logger.info(f"Acknowledged alarm {base_path}")
+            self.plc.write_by_name(f"{symbol_path}.Acknowledged", True, pyads.PLCTYPE_BOOL)
+            logger.info(f"Acknowledged alarm {symbol_path}")
             return True
         except Exception as e:
-            logger.error(f"Failed to acknowledge alarm {base_path}: {e}")
+            logger.error(f"Error acknowledging alarm {symbol_path}: {e}")
             return False
     
-    def read_all_symbols(self, symbols_config: Dict[str, List[str]], base_path: str = "MAIN.HMI") -> Dict[str, Dict]:
+    def read_all_symbols(self, symbols_config: Dict[str, List[str]], base_path: str = "MAIN.HMI") -> Dict[str, Dict[str, Any]]:
         """
-        Read all symbols from configuration
+        Read all symbols from config
         
         Args:
-            symbols_config: Dictionary with symbol categories and names
-            base_path: Base path to HMI symbols (e.g., "MAIN.HMI")
+            symbols_config: Dict with 'setpoints', 'process_values', 'switches', 'alarms' lists
+            base_path: Base path to HMI struct (default: "MAIN.HMI")
             
         Returns:
-            Dictionary with all symbol data categorized
+            Dict mapping symbol names to their data
         """
-        all_data = {
-            'setpoints': {},
-            'process_values': {},
-            'switches': {},
-            'alarms': {}
-        }
+        all_symbols = {}
         
         # Read setpoints
-        for name in symbols_config.get('setpoints', []):
-            full_path = f"{base_path}.{name}"
-            data = self.read_setpoint(full_path)
-            if data:
-                all_data['setpoints'][full_path] = data
+        for sp_name in symbols_config.get('setpoints', []):
+            full_path = f"{base_path}.{sp_name}"
+            sp_data = self.read_setpoint(full_path)
+            if sp_data:
+                all_symbols[sp_name] = {
+                    'path': full_path,
+                    'type': 'setpoint',
+                    'data': sp_data
+                }
         
         # Read process values
-        for name in symbols_config.get('process_values', []):
-            full_path = f"{base_path}.{name}"
-            data = self.read_process_value(full_path)
-            if data:
-                all_data['process_values'][full_path] = data
+        for pv_name in symbols_config.get('process_values', []):
+            full_path = f"{base_path}.{pv_name}"
+            pv_data = self.read_process_value(full_path)
+            if pv_data:
+                all_symbols[pv_name] = {
+                    'path': full_path,
+                    'type': 'process_value',
+                    'data': pv_data
+                }
         
         # Read switches
-        for name in symbols_config.get('switches', []):
-            full_path = f"{base_path}.{name}"
-            data = self.read_switch(full_path)
-            if data:
-                all_data['switches'][full_path] = data
+        for sw_name in symbols_config.get('switches', []):
+            full_path = f"{base_path}.{sw_name}"
+            sw_data = self.read_switch(full_path)
+            if sw_data:
+                all_symbols[sw_name] = {
+                    'path': full_path,
+                    'type': 'switch',
+                    'data': sw_data
+                }
         
         # Read alarms
-        for name in symbols_config.get('alarms', []):
-            full_path = f"{base_path}.{name}"
-            data = self.read_alarm(full_path)
-            if data:
-                all_data['alarms'][full_path] = data
+        for al_name in symbols_config.get('alarms', []):
+            full_path = f"{base_path}.{al_name}"
+            al_data = self.read_alarm(full_path)
+            if al_data:
+                all_symbols[al_name] = {
+                    'path': full_path,
+                    'type': 'alarm',
+                    'data': al_data
+                }
         
-        return all_data
+        logger.info(f"Read {len(all_symbols)} symbols from PLC")
+        return all_symbols
