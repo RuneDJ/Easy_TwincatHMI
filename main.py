@@ -49,6 +49,12 @@ class TwinCATHMI(QMainWindow):
         self.alarm_manager = AlarmManager(self.config)
         self.alarm_logger = AlarmLogger()
         
+        # Auto-scan components
+        self.hmi_scanner = None
+        self.struct_reader = None
+        self.auto_scan_enabled = self.config.get('auto_scan', {}).get('enabled', False)
+        self.discovered_symbols_cache = {}
+        
         # Register alarm callback for logging
         self.alarm_manager.register_callback(self.on_alarm_change)
         
@@ -124,35 +130,50 @@ class TwinCATHMI(QMainWindow):
         connection_panel = self.create_connection_panel()
         main_layout.addWidget(connection_panel)
         
-        # Main content splitter
-        splitter = QSplitter(Qt.Horizontal)
-        
-        # Left side - Controls
-        left_widget = QWidget()
-        left_layout = QVBoxLayout()
-        left_widget.setLayout(left_layout)
-        
-        # Setpoint panel
-        self.setpoint_panel = SetpointPanel()
-        self.setpoint_panel.value_changed.connect(self.on_setpoint_changed)
-        left_layout.addWidget(self.setpoint_panel)
-        
-        # Switch panel
-        self.switch_panel = SwitchPanel()
-        self.switch_panel.value_changed.connect(self.on_switch_changed)
-        left_layout.addWidget(self.switch_panel)
-        
-        splitter.addWidget(left_widget)
-        
-        # Right side - Process values
-        self.pv_panel = ProcessValuePanel()
-        self.pv_panel.value_clicked.connect(self.show_trend)
-        splitter.addWidget(self.pv_panel)
-        
-        # Set initial sizes
-        splitter.setSizes([400, 800])
-        
-        main_layout.addWidget(splitter, stretch=1)
+        # Check if using new HMI widget structure
+        if self.auto_scan_enabled:
+            # New HMI Symbol Panel (single scrollable panel with expandable widgets)
+            self.hmi_panel = HMISymbolPanel()
+            self.hmi_panel.value_changed.connect(self.on_hmi_value_changed)
+            main_layout.addWidget(self.hmi_panel, stretch=1)
+            
+            # Legacy panels not used
+            self.setpoint_panel = None
+            self.switch_panel = None
+            self.pv_panel = None
+        else:
+            # Legacy mode - use old panels
+            splitter = QSplitter(Qt.Horizontal)
+            
+            # Left side - Controls
+            left_widget = QWidget()
+            left_layout = QVBoxLayout()
+            left_widget.setLayout(left_layout)
+            
+            # Setpoint panel
+            self.setpoint_panel = SetpointPanel()
+            self.setpoint_panel.value_changed.connect(self.on_setpoint_changed)
+            left_layout.addWidget(self.setpoint_panel)
+            
+            # Switch panel
+            self.switch_panel = SwitchPanel()
+            self.switch_panel.value_changed.connect(self.on_switch_changed)
+            left_layout.addWidget(self.switch_panel)
+            
+            splitter.addWidget(left_widget)
+            
+            # Right side - Process values
+            self.pv_panel = ProcessValuePanel()
+            self.pv_panel.value_clicked.connect(self.show_trend)
+            splitter.addWidget(self.pv_panel)
+            
+            # Set initial sizes
+            splitter.setSizes([400, 800])
+            
+            main_layout.addWidget(splitter, stretch=1)
+            
+            # HMI panel not used in legacy mode
+            self.hmi_panel = None
         
         # Information panel
         info_panel = self.create_info_panel()
@@ -195,11 +216,23 @@ class TwinCATHMI(QMainWindow):
         self.connect_button.setMinimumWidth(100)
         layout.addWidget(self.connect_button)
         
+        # Refresh symbols button
+        self.refresh_btn = QPushButton('🔄 Refresh')
+        self.refresh_btn.setEnabled(False)
+        self.refresh_btn.clicked.connect(self.refresh_symbols)
+        self.refresh_btn.setMinimumWidth(100)
+        layout.addWidget(self.refresh_btn)
+        
         # Status indicator
         self.status_label = QLabel('●')
         self.status_label.setFont(QFont('Segoe UI', 16))
         self.status_label.setStyleSheet('color: red;')
         layout.addWidget(self.status_label)
+        
+        # Scan status label
+        self.scan_status_label = QLabel('Symboler: -')
+        self.scan_status_label.setStyleSheet('color: gray;')
+        layout.addWidget(self.scan_status_label)
         
         layout.addStretch()
         
@@ -309,11 +342,13 @@ class TwinCATHMI(QMainWindow):
         """Update UI based on connection state"""
         if connected:
             self.connect_button.setText('Afbryd')
+            self.refresh_btn.setEnabled(True)
             self.status_label.setStyleSheet('color: green;')
             self.ams_net_id_input.setEnabled(False)
             self.ams_port_input.setEnabled(False)
         else:
             self.connect_button.setText('Forbind')
+            self.refresh_btn.setEnabled(False)
             self.status_label.setStyleSheet('color: red;')
             self.ams_net_id_input.setEnabled(True)
             self.ams_port_input.setEnabled(True)
@@ -822,17 +857,52 @@ class TwinCATHMI(QMainWindow):
     
     def create_symbol_widgets(self, categorized: dict):
         """Create UI widgets for discovered symbols"""
+        # Check if using new HMI panel
+        if self.auto_scan_enabled and self.hmi_panel:
+            # New HMI Symbol Panel - add all symbols
+            for category in ['setpoints', 'process_values', 'switches', 'alarms']:
+                symbols = categorized.get(category, {})
+                if isinstance(symbols, dict):
+                    for symbol_path, symbol_data in symbols.items():
+                        self.hmi_panel.add_hmi_symbol(symbol_path, symbol_data)
+                        logger.info(f"Added HMI symbol: {symbol_path}")
+            return
+        
+        # Legacy mode - use old panels
+        # Handle both list and dict formats
+        # Auto-scan returns dicts with paths as keys
+        # Legacy returns lists
+        
+        if not self.setpoint_panel or not self.pv_panel or not self.switch_panel:
+            logger.warning("Legacy panels not initialized")
+            return
+        
         # Add setpoints
-        for symbol in categorized['setpoint']:
-            self.setpoint_panel.add_setpoint(symbol)
+        setpoints = categorized.get('setpoints', categorized.get('setpoint', []))
+        if isinstance(setpoints, dict):
+            for symbol_path, symbol_data in setpoints.items():
+                self.setpoint_panel.add_setpoint(symbol_data)
+        else:
+            for symbol in setpoints:
+                self.setpoint_panel.add_setpoint(symbol)
         
         # Add process values
-        for symbol in categorized['process_value']:
-            self.pv_panel.add_process_value(symbol)
+        process_values = categorized.get('process_values', categorized.get('process_value', []))
+        if isinstance(process_values, dict):
+            for symbol_path, symbol_data in process_values.items():
+                self.pv_panel.add_process_value(symbol_data)
+        else:
+            for symbol in process_values:
+                self.pv_panel.add_process_value(symbol)
         
         # Add switches
-        for symbol in categorized['switch']:
-            self.switch_panel.add_switch(symbol)
+        switches = categorized.get('switches', categorized.get('switch', []))
+        if isinstance(switches, dict):
+            for symbol_path, symbol_data in switches.items():
+                self.switch_panel.add_switch(symbol_data)
+        else:
+            for symbol in switches:
+                self.switch_panel.add_switch(symbol)
     
     def update_plc_data(self):
         """Update data from PLC"""
@@ -858,31 +928,84 @@ class TwinCATHMI(QMainWindow):
             values = self.ads_client.read_multiple_symbols(all_symbols)
             self.current_values = values
             
-            # Update UI
-            for symbol_name, value in values.items():
-                symbol_config = self.symbol_parser.get_symbol_config(symbol_name)
-                
-                if not symbol_config:
-                    continue
-                
-                category = symbol_config['category']
-                
-                if category == 'setpoint':
-                    self.setpoint_panel.update_value(symbol_name, value)
-                elif category == 'process_value':
-                    self.pv_panel.update_value(symbol_name, value)
-                elif category == 'switch':
-                    self.switch_panel.update_value(symbol_name, value)
-            
-            # Check alarms
-            self.alarm_manager.check_alarms(values, self.symbol_configs)
-            
-            # Update alarm indicators
-            self.update_alarm_indicators()
-            
         except Exception as e:
             logger.error(f"Update error: {e}")
             self.add_info_message(f'Fejl ved opdatering: {e}')
+    
+    def update_hmi_symbols(self):
+        """Update HMI symbols from PLC (new mode)"""
+        if not self.discovered_symbols_cache:
+            return
+        
+        for symbol_path, symbol_info in self.discovered_symbols_cache.items():
+            try:
+                category = symbol_info.category
+                
+                if category == 'setpoint':
+                    data = self.struct_reader.read_setpoint(symbol_path)
+                    if data and 'value' in data:
+                        self.hmi_panel.update_value(symbol_path, data['value'])
+                
+                elif category == 'process_value':
+                    data = self.struct_reader.read_process_value(symbol_path)
+                    if data and 'value' in data:
+                        self.hmi_panel.update_value(symbol_path, data['value'])
+                
+                elif category == 'switch':
+                    data = self.struct_reader.read_switch(symbol_path)
+                    if data and 'position' in data:
+                        self.hmi_panel.update_value(symbol_path, data['position'])
+                
+                elif category == 'alarm':
+                    data = self.struct_reader.read_alarm(symbol_path)
+                    if data and 'active' in data:
+                        self.hmi_panel.update_value(symbol_path, data['active'])
+                        # Set alarm state on widget
+                        if data['active']:
+                            self.hmi_panel.set_alarm_state(symbol_path, True)
+                        else:
+                            self.hmi_panel.set_alarm_state(symbol_path, False)
+            
+            except Exception as e:
+                logger.debug(f"Failed to read {symbol_path}: {e}")
+                continue
+    
+    def update_legacy_symbols(self):
+        """Update symbols using legacy method"""
+        # Get all symbol names
+        all_symbols = []
+        
+        for category in self.symbol_parser.categorized_symbols.values():
+            all_symbols.extend([s['name'] for s in category])
+        
+        if not all_symbols:
+            return
+        
+        # Read values
+        values = self.ads_client.read_multiple_symbols(all_symbols)
+        self.current_values = values
+        
+        # Update UI
+        for symbol_name, value in values.items():
+            symbol_config = self.symbol_parser.get_symbol_config(symbol_name)
+            
+            if not symbol_config:
+                continue
+            
+            category = symbol_config['category']
+            
+            if category == 'setpoint' and self.setpoint_panel:
+                self.setpoint_panel.update_value(symbol_name, value)
+            elif category == 'process_value' and self.pv_panel:
+                self.pv_panel.update_value(symbol_name, value)
+            elif category == 'switch' and self.switch_panel:
+                self.switch_panel.update_value(symbol_name, value)
+        
+        # Check alarms
+        self.alarm_manager.check_alarms(values, self.symbol_configs)
+        
+        # Update alarm indicators
+        self.update_alarm_indicators()
     
     def update_plc_data_structs(self):
         """Update data from PLC using STRUCT approach"""
@@ -940,11 +1063,33 @@ class TwinCATHMI(QMainWindow):
         for symbol_name in self.current_values.keys():
             has_alarm = symbol_name in alarm_symbols
             
-            self.setpoint_panel.set_alarm_state(symbol_name, has_alarm)
-            self.pv_panel.set_alarm_state(symbol_name, has_alarm)
+            if self.setpoint_panel:
+                self.setpoint_panel.set_alarm_state(symbol_name, has_alarm)
+            if self.pv_panel:
+                self.pv_panel.set_alarm_state(symbol_name, has_alarm)
+    
+    def on_hmi_value_changed(self, symbol_path: str, value):
+        """Handle HMI value change from new widget"""
+        if not self.connected:
+            return
+        
+        try:
+            logger.info(f"Writing {value} to {symbol_path}")
+            
+            # Write directly to the specific path (e.g., MAIN.Motor01.HMI.SpeedSetpoint.Value)
+            success = self.ads_client.write_symbol(symbol_path, value)
+            
+            if success:
+                self.add_info_message(f'Skrev {value} til {symbol_path}')
+            else:
+                self.add_info_message(f'Fejl ved skrivning til {symbol_path}')
+        
+        except Exception as e:
+            logger.error(f"Write error: {e}")
+            self.add_info_message(f'Fejl: {e}')
     
     def on_setpoint_changed(self, symbol_name: str, value: float):
-        """Handle setpoint value change"""
+        """Handle setpoint value change (legacy)"""
         if not self.connected:
             return
         
@@ -964,7 +1109,7 @@ class TwinCATHMI(QMainWindow):
             self.add_info_message(f'Fejl: {e}')
     
     def on_switch_changed(self, symbol_name: str, position: int):
-        """Handle switch position change"""
+        """Handle switch position change (legacy)"""
         if not self.connected:
             return
         
@@ -1107,6 +1252,194 @@ class TwinCATHMI(QMainWindow):
         
         lines.append(f'[{timestamp}] {message}')
         self.info_text.setText('\n'.join(lines))
+    
+    def discover_symbols_auto_scan(self):
+        """
+        Automatisk scan mode - finder alle HMI tags via TMC fil
+        """
+        try:
+            # 1. Hent TMC path fra config
+            tmc_path = self.config.get('tmc_file', None)
+            if not tmc_path:
+                logger.warning("No TMC file path specified in config")
+                self.add_info_message('Advarsel: Ingen TMC fil angivet i config.json')
+                return
+            
+            # 2. Opret scanner med TMC path
+            self.hmi_scanner = HMIAttributeScanner(self.ads_client.plc, tmc_path=tmc_path)
+            
+            # 3. Scan TMC fil for HMI attributter
+            hmi_symbol_paths = self.hmi_scanner.scan_for_hmi_attributes()
+            logger.info(f"Found {len(hmi_symbol_paths)} HMI symbols in TMC file")
+            self.add_info_message(f'Fandt {len(hmi_symbol_paths)} HMI symboler i TMC fil')
+            
+            # 4. Analyser hvert symbol og extract metadata
+            all_symbols = {}
+            for symbol_path in hmi_symbol_paths:
+                symbols = self.hmi_scanner.analyze_hmi_symbol(symbol_path)
+                all_symbols.update(symbols)
+                
+                # Gem i scanner's cache
+                self.hmi_scanner.discovered_symbols.update(symbols)
+            
+            logger.info(f"Auto-discovered {len(all_symbols)} HMI symbols total")
+            self.add_info_message(f'Fandt {len(all_symbols)} HMI symboler i alt')
+            
+            # 4. Konverter SymbolInfo til GUI format
+            gui_symbols = self.convert_scanner_symbols_to_gui(all_symbols)
+            
+            # 5. Opret GUI widgets
+            self.create_symbol_widgets(gui_symbols)
+            
+            # 6. Gem til runtime cache
+            self.discovered_symbols_cache = all_symbols
+            
+            # 7. Opdater status
+            self.update_scan_status(len(all_symbols))
+            
+        except Exception as e:
+            logger.error(f"Auto-scan failed: {e}")
+            QMessageBox.critical(self, "Auto-Scan Fejl", 
+                               f"Kunne ikke auto-scanne PLC for HMI symboler:\n{e}")
+    
+    def convert_scanner_symbols_to_gui(self, scanner_symbols: dict) -> dict:
+        """
+        Konverter SymbolInfo objekter til GUI-format
+        
+        Args:
+            scanner_symbols: Dictionary af SymbolInfo fra scanner
+            
+        Returns:
+            Dictionary i samme format som discover_symbols_from_structs()
+        """
+        gui_symbols = {
+            'setpoints': {},
+            'process_values': {},
+            'switches': {},
+            'alarms': {}
+        }
+        
+        if not self.struct_reader:
+            logger.error("StructReader not initialized")
+            return gui_symbols
+        
+        for path, symbol_info in scanner_symbols.items():
+            try:
+                if symbol_info.category == 'setpoint':
+                    data = self.struct_reader.read_setpoint(path)
+                    if data:
+                        # Format for HMI widget
+                        gui_data = {
+                            'name': path,
+                            'category': 'setpoint',
+                            'display_name': data['display'].get('display_name', symbol_info.display_name),
+                            'value': data.get('value', 0.0),
+                            'unit': data['config'].get('unit', ''),
+                            'min': data['config'].get('min', 0.0),
+                            'max': data['config'].get('max', 100.0),
+                            'decimals': data['config'].get('decimals', 2),
+                            'step': data['config'].get('step', 1.0),
+                            'alarm_limits': data.get('alarm_limits', {}),
+                            'description': data['display'].get('description', ''),
+                            'visible': data['display'].get('visible', True),
+                            'readonly': data['display'].get('read_only', False)
+                        }
+                        gui_symbols['setpoints'][path] = gui_data
+                        logger.info(f"Loaded setpoint: {path}")
+                    
+                elif symbol_info.category == 'process_value':
+                    data = self.struct_reader.read_process_value(path)
+                    if data:
+                        gui_data = {
+                            'name': path,
+                            'category': 'process_value',
+                            'display_name': data['display'].get('display_name', symbol_info.display_name),
+                            'value': data.get('value', 0.0),
+                            'unit': data['config'].get('unit', ''),
+                            'decimals': data['config'].get('decimals', 2),
+                            'alarm_limits': data.get('alarm_limits', {}),
+                            'description': data['display'].get('description', ''),
+                            'visible': data['display'].get('visible', True),
+                            'readonly': data['display'].get('read_only', True),
+                            'quality': data.get('quality', 'Unknown'),
+                            'sensor_fault': data.get('sensor_fault', False)
+                        }
+                        gui_symbols['process_values'][path] = gui_data
+                        logger.info(f"Loaded process value: {path}")
+                    
+                elif symbol_info.category == 'switch':
+                    data = self.struct_reader.read_switch(path)
+                    if data:
+                        # Convert positions dict to list for widget
+                        positions_dict = data.get('positions', {})
+                        positions_list = []
+                        if isinstance(positions_dict, dict):
+                            # Sort by key and extract values
+                            for key in sorted(positions_dict.keys(), key=lambda x: int(x) if x.isdigit() else 0):
+                                positions_list.append(positions_dict[key])
+                        
+                        gui_data = {
+                            'name': path,
+                            'category': 'switch',
+                            'display_name': data['display'].get('display_name', symbol_info.display_name),
+                            'position': data.get('position', 0),
+                            'positions': positions_list if positions_list else data['config'].get('labels', []),
+                            'description': data['display'].get('description', ''),
+                            'visible': data['display'].get('visible', True),
+                            'readonly': data['display'].get('read_only', False)
+                        }
+                        gui_symbols['switches'][path] = gui_data
+                        logger.info(f"Loaded switch: {path}")
+                    
+                elif symbol_info.category == 'alarm':
+                    data = self.struct_reader.read_alarm(path)
+                    if data:
+                        gui_data = {
+                            'name': path,
+                            'category': 'alarm',
+                            'display_name': data.get('display', {}).get('display_name', symbol_info.display_name) if 'display' in data else symbol_info.display_name,
+                            'active': data.get('active', False),
+                            'alarm_text': data.get('text', ''),  # Note: struct_reader uses 'text' not 'alarm_text'
+                            'priority': data.get('priority', 3),
+                            'acknowledged': data.get('acknowledged', False),
+                            'description': data.get('display', {}).get('description', '') if 'display' in data else '',
+                            'visible': data.get('display', {}).get('visible', True) if 'display' in data else True,
+                            'readonly': data.get('display', {}).get('read_only', True) if 'display' in data else True
+                        }
+                        gui_symbols['alarms'][path] = gui_data
+                        logger.info(f"Loaded alarm: {path}")
+                    
+            except Exception as e:
+                logger.warning(f"Failed to read {path}: {e}")
+                continue
+        
+        return gui_symbols
+    
+    def refresh_symbols(self):
+        """
+        Refresh knap handler - re-scan PLC for nye/ændrede symboler
+        """
+        if not self.connected:
+            return
+            
+        if self.auto_scan_enabled:
+            logger.info("Refreshing auto-scanned symbols...")
+            self.add_info_message('Refresher auto-scannede symboler...')
+            self.discover_symbols_auto_scan()
+        else:
+            logger.info("Refreshing manual symbols...")
+            self.add_info_message('Refresher manuelle symboler...')
+            self.discover_symbols()
+    
+    def update_scan_status(self, symbol_count: int):
+        """Opdater status label med antal opdagede symboler"""
+        if hasattr(self, 'scan_status_label'):
+            self.scan_status_label.setText(f"Symboler: {symbol_count}")
+            
+            if self.auto_scan_enabled:
+                self.scan_status_label.setStyleSheet("color: green;")
+            else:
+                self.scan_status_label.setStyleSheet("color: blue;")
     
     def closeEvent(self, event):
         """Handle window close"""

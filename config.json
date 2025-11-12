@@ -6,7 +6,16 @@
   "ads": {
     "ams_net_id": "5.112.50.143.1.1",
     "ams_port": 851,
-    "update_interval": 1.0
+    "update_interval": 3.0
+  },
+  "use_structs": true,
+  "hmi_struct_path": "MAIN.HMI",
+  "auto_scan": {
+    "enabled": true,
+    "scan_on_startup": true,
+    "attribute_marker": "HMI",
+    "cache_discovered_symbols": true,
+    "rescan_interval_seconds": 0
   },
   "use_structs": true,
   "hmi_struct_path": "MAIN.HMI",

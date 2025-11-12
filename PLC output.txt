@@ -1,0 +1,333 @@
+================================================================================
+TMC FILE - ALL PROGRAM VARIABLES AND DATA TYPES
+================================================================================
+
+Total symbols: 2
+Total data types: 18
+
+HMI Data Types:
+  Total HMI types (ST_HMI_*): 5
+    - ST_HMI_Setpoint
+    - ST_HMI_ProcessValue
+    - ST_HMI_Switch
+    - ST_HMI_Alarm
+    - ST_HMI_Motor
+
+HMI Symbols/Attributes:
+  HMI_SP (Setpoints): 0
+  HMI_PV (Process Values): 0
+  HMI_SWITCH (Switches): 0
+  HMI_ALARM (Alarms): 0
+  HMI attribute marker: 0
+
+================================================================================
+
+DATA TYPES:
+================================================================================
+
+
+ST_LibVersion
+└── iMajor (UINT) → ST_LibVersion.iMajor
+└── iMinor (UINT) → ST_LibVersion.iMinor
+└── iBuild (UINT) → ST_LibVersion.iBuild
+└── iRevision (UINT) → ST_LibVersion.iRevision
+└── nFlags (DWORD) → ST_LibVersion.nFlags
+└── sVersion (STRING(23)) → ST_LibVersion.sVersion
+
+
+ST_NumericConfig
+└── Unit (STRING(20)) → ST_NumericConfig.Unit
+└── nMin (REAL) → ST_NumericConfig.nMin
+└── nMax (REAL) → ST_NumericConfig.nMax
+└── Decimals (USINT) → ST_NumericConfig.Decimals
+└── Step (REAL) → ST_NumericConfig.Step
+
+
+ST_AlarmLimits
+└── AlarmHighHigh (REAL) → ST_AlarmLimits.AlarmHighHigh
+└── AlarmHigh (REAL) → ST_AlarmLimits.AlarmHigh
+└── AlarmLow (REAL) → ST_AlarmLimits.AlarmLow
+└── AlarmLowLow (REAL) → ST_AlarmLimits.AlarmLowLow
+└── AlarmPriority (USINT) → ST_AlarmLimits.AlarmPriority
+└── AlarmActive (BOOL) → ST_AlarmLimits.AlarmActive
+└── WarningActive (BOOL) → ST_AlarmLimits.WarningActive
+└── AlarmText (STRING(80)) → ST_AlarmLimits.AlarmText
+└── Hysteresis (REAL) → ST_AlarmLimits.Hysteresis
+
+
+ST_DisplayConfig
+└── DisplayName (STRING(60)) → ST_DisplayConfig.DisplayName
+└── Description (STRING(120)) → ST_DisplayConfig.Description
+└── Visible (BOOL) → ST_DisplayConfig.Visible
+└── ReadOnly (BOOL) → ST_DisplayConfig.ReadOnly
+
+
+ST_HMI_Setpoint
+└── Value (REAL) → ST_HMI_Setpoint.Value
+└── Config (ST_NumericConfig) → ST_HMI_Setpoint.Config
+└── AlarmLimits (ST_AlarmLimits) → ST_HMI_Setpoint.AlarmLimits
+└── Display (ST_DisplayConfig) → ST_HMI_Setpoint.Display
+└── ValueChanged (BOOL) → ST_HMI_Setpoint.ValueChanged
+└── LastUpdateTime (DATE_AND_TIME) → ST_HMI_Setpoint.LastUpdateTime
+
+
+ST_HMI_ProcessValue
+└── Value (REAL) → ST_HMI_ProcessValue.Value
+└── Config (ST_NumericConfig) → ST_HMI_ProcessValue.Config
+└── AlarmLimits (ST_AlarmLimits) → ST_HMI_ProcessValue.AlarmLimits
+└── Display (ST_DisplayConfig) → ST_HMI_ProcessValue.Display
+└── Quality (USINT) → ST_HMI_ProcessValue.Quality
+└── SensorFault (BOOL) → ST_HMI_ProcessValue.SensorFault
+└── LastUpdateTime (DATE_AND_TIME) → ST_HMI_ProcessValue.LastUpdateTime
+
+
+ST_SwitchConfig
+└── NumPositions (USINT) → ST_SwitchConfig.NumPositions
+└── Pos0_Label (STRING(40)) → ST_SwitchConfig.Pos0_Label
+└── Pos1_Label (STRING(40)) → ST_SwitchConfig.Pos1_Label
+└── Pos2_Label (STRING(40)) → ST_SwitchConfig.Pos2_Label
+└── Pos3_Label (STRING(40)) → ST_SwitchConfig.Pos3_Label
+└── Pos4_Label (STRING(40)) → ST_SwitchConfig.Pos4_Label
+└── Pos5_Label (STRING(40)) → ST_SwitchConfig.Pos5_Label
+└── Pos6_Label (STRING(40)) → ST_SwitchConfig.Pos6_Label
+└── Pos7_Label (STRING(40)) → ST_SwitchConfig.Pos7_Label
+
+
+ST_HMI_Switch
+└── Position (INT) → ST_HMI_Switch.Position
+└── Config (ST_SwitchConfig) → ST_HMI_Switch.Config
+└── Display (ST_DisplayConfig) → ST_HMI_Switch.Display
+└── PositionChanged (BOOL) → ST_HMI_Switch.PositionChanged
+└── LastUpdateTime (DATE_AND_TIME) → ST_HMI_Switch.LastUpdateTime
+
+
+ST_HMI_Alarm
+└── Active (BOOL) → ST_HMI_Alarm.Active
+└── AlarmText (STRING(80)) → ST_HMI_Alarm.AlarmText
+└── AlarmPriority (USINT) → ST_HMI_Alarm.AlarmPriority
+└── Display (ST_DisplayConfig) → ST_HMI_Alarm.Display
+└── Acknowledged (BOOL) → ST_HMI_Alarm.Acknowledged
+└── TriggerTime (DATE_AND_TIME) → ST_HMI_Alarm.TriggerTime
+└── AckTime (DATE_AND_TIME) → ST_HMI_Alarm.AckTime
+└── TriggerCount (UDINT) → ST_HMI_Alarm.TriggerCount
+
+
+ST_HMI_Motor
+└── SpeedSetpoint (ST_HMI_Setpoint) → ST_HMI_Motor.SpeedSetpoint
+└── CurrentSpeed (ST_HMI_ProcessValue) → ST_HMI_Motor.CurrentSpeed
+└── Mode (ST_HMI_Switch) → ST_HMI_Motor.Mode
+└── Fault (ST_HMI_Alarm) → ST_HMI_Motor.Fault
+
+
+ST_Motor
+└── Speed (REAL) → ST_Motor.Speed
+└── Running (BOOL) → ST_Motor.Running
+└── HMI (ST_HMI_Motor) → ST_Motor.HMI
+
+
+ST_ProcessValue
+└── Value (REAL) → ST_ProcessValue.Value
+└── HMI (ST_HMI_ProcessValue) → ST_ProcessValue.HMI
+
+
+EPlcPersistentStatus
+
+
+PlcAppSystemInfo
+└── ObjId (OTCID) → PlcAppSystemInfo.ObjId
+└── TaskCnt (UDINT) → PlcAppSystemInfo.TaskCnt
+└── OnlineChangeCnt (UDINT) → PlcAppSystemInfo.OnlineChangeCnt
+└── Flags (DWORD) → PlcAppSystemInfo.Flags
+└── AdsPort (UINT) → PlcAppSystemInfo.AdsPort
+└── BootDataLoaded (BOOL) → PlcAppSystemInfo.BootDataLoaded
+└── OldBootData (BOOL) → PlcAppSystemInfo.OldBootData
+└── AppTimestamp (DT) → PlcAppSystemInfo.AppTimestamp
+└── KeepOutputsOnBP (BOOL) → PlcAppSystemInfo.KeepOutputsOnBP
+└── ShutdownInProgress (BOOL) → PlcAppSystemInfo.ShutdownInProgress
+└── LicensesPending (BOOL) → PlcAppSystemInfo.LicensesPending
+└── BSODOccured (BOOL) → PlcAppSystemInfo.BSODOccured
+└── LoggedIn (BOOL) → PlcAppSystemInfo.LoggedIn
+└── PersistentStatus (EPlcPersistentStatus) → PlcAppSystemInfo.PersistentStatus
+└── TComSrvPtr (ITComObjectServer) → PlcAppSystemInfo.TComSrvPtr
+└── AppName (STRING(63)) → PlcAppSystemInfo.AppName
+└── ProjectName (STRING(63)) → PlcAppSystemInfo.ProjectName
+
+
+PlcTaskSystemInfo
+└── ObjId (OTCID) → PlcTaskSystemInfo.ObjId
+└── CycleTime (UDINT) → PlcTaskSystemInfo.CycleTime
+└── Priority (UINT) → PlcTaskSystemInfo.Priority
+└── AdsPort (UINT) → PlcTaskSystemInfo.AdsPort
+└── CycleCount (UDINT) → PlcTaskSystemInfo.CycleCount
+└── DcTaskTime (LINT) → PlcTaskSystemInfo.DcTaskTime
+└── LastExecTime (UDINT) → PlcTaskSystemInfo.LastExecTime
+└── FirstCycle (BOOL) → PlcTaskSystemInfo.FirstCycle
+└── CycleTimeExceeded (BOOL) → PlcTaskSystemInfo.CycleTimeExceeded
+└── InCallAfterOutputUpdate (BOOL) → PlcTaskSystemInfo.InCallAfterOutputUpdate
+└── RTViolation (BOOL) → PlcTaskSystemInfo.RTViolation
+└── TaskName (STRING(63)) → PlcTaskSystemInfo.TaskName
+
+
+_Implicit_KindOfTask
+
+
+_Implicit_Jitter_Distribution
+└── wRangeMax (WORD) → _Implicit_Jitter_Distribution.wRangeMax
+└── wCountJitterNeg (WORD) → _Implicit_Jitter_Distribution.wCountJitterNeg
+└── wCountJitterPos (WORD) → _Implicit_Jitter_Distribution.wCountJitterPos
+
+
+_Implicit_Task_Info
+└── dwVersion (DWORD) → _Implicit_Task_Info.dwVersion
+└── pszName (STRING(80)) → _Implicit_Task_Info.pszName
+└── nPriority (INT) → _Implicit_Task_Info.nPriority
+└── KindOf (_Implicit_KindOfTask) → _Implicit_Task_Info.KindOf
+└── bWatchdog (BOOL) → _Implicit_Task_Info.bWatchdog
+└── bProfilingTask (BOOL) → _Implicit_Task_Info.bProfilingTask
+└── dwEventFunctionPointer (BYTE) → _Implicit_Task_Info.dwEventFunctionPointer
+└── pszExternalEvent (STRING(80)) → _Implicit_Task_Info.pszExternalEvent
+└── dwTaskEntryFunctionPointer (BYTE) → _Implicit_Task_Info.dwTaskEntryFunctionPointer
+└── dwWatchdogSensitivity (DWORD) → _Implicit_Task_Info.dwWatchdogSensitivity
+└── dwInterval (DWORD) → _Implicit_Task_Info.dwInterval
+└── dwWatchdogTime (DWORD) → _Implicit_Task_Info.dwWatchdogTime
+└── dwLastCycleTime (DWORD) → _Implicit_Task_Info.dwLastCycleTime
+└── dwAverageCycleTime (DWORD) → _Implicit_Task_Info.dwAverageCycleTime
+└── dwMaxCycleTime (DWORD) → _Implicit_Task_Info.dwMaxCycleTime
+└── dwMinCycleTime (DWORD) → _Implicit_Task_Info.dwMinCycleTime
+└── diJitter (DINT) → _Implicit_Task_Info.diJitter
+└── diJitterMin (DINT) → _Implicit_Task_Info.diJitterMin
+└── diJitterMax (DINT) → _Implicit_Task_Info.diJitterMax
+└── dwCycleCount (DWORD) → _Implicit_Task_Info.dwCycleCount
+└── wTaskStatus (WORD) → _Implicit_Task_Info.wTaskStatus
+└── wNumOfJitterDistributions (WORD) → _Implicit_Task_Info.wNumOfJitterDistributions
+└── pJitterDistribution (_Implicit_Jitter_Distribution) → _Implicit_Task_Info.pJitterDistribution
+└── bWithinSPSTimeSlicing (BOOL) → _Implicit_Task_Info.bWithinSPSTimeSlicing
+└── byDummy (BYTE) → _Implicit_Task_Info.byDummy
+└── bShouldBlock (BOOL) → _Implicit_Task_Info.bShouldBlock
+└── bActive (BOOL) → _Implicit_Task_Info.bActive
+└── dwIECCycleCount (DWORD) → _Implicit_Task_Info.dwIECCycleCount
+
+
+================================================================================
+SYMBOLS:
+================================================================================
+
+
+MAIN.Motor01 (ST_Motor)
+└── Speed (REAL) → MAIN.Motor01.Speed
+└── Running (BOOL) → MAIN.Motor01.Running
+└── HMI (ST_HMI_Motor) → MAIN.Motor01.HMI
+     └── SpeedSetpoint (ST_HMI_Setpoint) → MAIN.Motor01.HMI.SpeedSetpoint
+          └── Value (REAL) → MAIN.Motor01.HMI.SpeedSetpoint.Value
+          └── Config (ST_NumericConfig) → MAIN.Motor01.HMI.SpeedSetpoint.Config
+               └── Unit (STRING(20)) → MAIN.Motor01.HMI.SpeedSetpoint.Config.Unit
+               └── nMin (REAL) → MAIN.Motor01.HMI.SpeedSetpoint.Config.nMin
+               └── nMax (REAL) → MAIN.Motor01.HMI.SpeedSetpoint.Config.nMax
+               └── Decimals (USINT) → MAIN.Motor01.HMI.SpeedSetpoint.Config.Decimals
+               └── Step (REAL) → MAIN.Motor01.HMI.SpeedSetpoint.Config.Step
+          └── AlarmLimits (ST_AlarmLimits) → MAIN.Motor01.HMI.SpeedSetpoint.AlarmLimits
+               └── AlarmHighHigh (REAL) → MAIN.Motor01.HMI.SpeedSetpoint.AlarmLimits.AlarmHighHigh
+               └── AlarmHigh (REAL) → MAIN.Motor01.HMI.SpeedSetpoint.AlarmLimits.AlarmHigh
+               └── AlarmLow (REAL) → MAIN.Motor01.HMI.SpeedSetpoint.AlarmLimits.AlarmLow
+               └── AlarmLowLow (REAL) → MAIN.Motor01.HMI.SpeedSetpoint.AlarmLimits.AlarmLowLow
+               └── AlarmPriority (USINT) → MAIN.Motor01.HMI.SpeedSetpoint.AlarmLimits.AlarmPriority
+               └── AlarmActive (BOOL) → MAIN.Motor01.HMI.SpeedSetpoint.AlarmLimits.AlarmActive
+               └── WarningActive (BOOL) → MAIN.Motor01.HMI.SpeedSetpoint.AlarmLimits.WarningActive
+               └── AlarmText (STRING(80)) → MAIN.Motor01.HMI.SpeedSetpoint.AlarmLimits.AlarmText
+               └── Hysteresis (REAL) → MAIN.Motor01.HMI.SpeedSetpoint.AlarmLimits.Hysteresis
+          └── Display (ST_DisplayConfig) → MAIN.Motor01.HMI.SpeedSetpoint.Display
+               └── DisplayName (STRING(60)) → MAIN.Motor01.HMI.SpeedSetpoint.Display.DisplayName
+               └── Description (STRING(120)) → MAIN.Motor01.HMI.SpeedSetpoint.Display.Description
+               └── Visible (BOOL) → MAIN.Motor01.HMI.SpeedSetpoint.Display.Visible
+               └── ReadOnly (BOOL) → MAIN.Motor01.HMI.SpeedSetpoint.Display.ReadOnly
+          └── ValueChanged (BOOL) → MAIN.Motor01.HMI.SpeedSetpoint.ValueChanged
+          └── LastUpdateTime (DATE_AND_TIME) → MAIN.Motor01.HMI.SpeedSetpoint.LastUpdateTime
+     └── CurrentSpeed (ST_HMI_ProcessValue) → MAIN.Motor01.HMI.CurrentSpeed
+          └── Value (REAL) → MAIN.Motor01.HMI.CurrentSpeed.Value
+          └── Config (ST_NumericConfig) → MAIN.Motor01.HMI.CurrentSpeed.Config
+               └── Unit (STRING(20)) → MAIN.Motor01.HMI.CurrentSpeed.Config.Unit
+               └── nMin (REAL) → MAIN.Motor01.HMI.CurrentSpeed.Config.nMin
+               └── nMax (REAL) → MAIN.Motor01.HMI.CurrentSpeed.Config.nMax
+               └── Decimals (USINT) → MAIN.Motor01.HMI.CurrentSpeed.Config.Decimals
+               └── Step (REAL) → MAIN.Motor01.HMI.CurrentSpeed.Config.Step
+          └── AlarmLimits (ST_AlarmLimits) → MAIN.Motor01.HMI.CurrentSpeed.AlarmLimits
+               └── AlarmHighHigh (REAL) → MAIN.Motor01.HMI.CurrentSpeed.AlarmLimits.AlarmHighHigh
+               └── AlarmHigh (REAL) → MAIN.Motor01.HMI.CurrentSpeed.AlarmLimits.AlarmHigh
+               └── AlarmLow (REAL) → MAIN.Motor01.HMI.CurrentSpeed.AlarmLimits.AlarmLow
+               └── AlarmLowLow (REAL) → MAIN.Motor01.HMI.CurrentSpeed.AlarmLimits.AlarmLowLow
+               └── AlarmPriority (USINT) → MAIN.Motor01.HMI.CurrentSpeed.AlarmLimits.AlarmPriority
+               └── AlarmActive (BOOL) → MAIN.Motor01.HMI.CurrentSpeed.AlarmLimits.AlarmActive
+               └── WarningActive (BOOL) → MAIN.Motor01.HMI.CurrentSpeed.AlarmLimits.WarningActive
+               └── AlarmText (STRING(80)) → MAIN.Motor01.HMI.CurrentSpeed.AlarmLimits.AlarmText
+               └── Hysteresis (REAL) → MAIN.Motor01.HMI.CurrentSpeed.AlarmLimits.Hysteresis
+          └── Display (ST_DisplayConfig) → MAIN.Motor01.HMI.CurrentSpeed.Display
+               └── DisplayName (STRING(60)) → MAIN.Motor01.HMI.CurrentSpeed.Display.DisplayName
+               └── Description (STRING(120)) → MAIN.Motor01.HMI.CurrentSpeed.Display.Description
+               └── Visible (BOOL) → MAIN.Motor01.HMI.CurrentSpeed.Display.Visible
+               └── ReadOnly (BOOL) → MAIN.Motor01.HMI.CurrentSpeed.Display.ReadOnly
+          └── Quality (USINT) → MAIN.Motor01.HMI.CurrentSpeed.Quality
+          └── SensorFault (BOOL) → MAIN.Motor01.HMI.CurrentSpeed.SensorFault
+          └── LastUpdateTime (DATE_AND_TIME) → MAIN.Motor01.HMI.CurrentSpeed.LastUpdateTime
+     └── Mode (ST_HMI_Switch) → MAIN.Motor01.HMI.Mode
+          └── Position (INT) → MAIN.Motor01.HMI.Mode.Position
+          └── Config (ST_SwitchConfig) → MAIN.Motor01.HMI.Mode.Config
+               └── NumPositions (USINT) → MAIN.Motor01.HMI.Mode.Config.NumPositions
+               └── Pos0_Label (STRING(40)) → MAIN.Motor01.HMI.Mode.Config.Pos0_Label
+               └── Pos1_Label (STRING(40)) → MAIN.Motor01.HMI.Mode.Config.Pos1_Label
+               └── Pos2_Label (STRING(40)) → MAIN.Motor01.HMI.Mode.Config.Pos2_Label
+               └── Pos3_Label (STRING(40)) → MAIN.Motor01.HMI.Mode.Config.Pos3_Label
+               └── Pos4_Label (STRING(40)) → MAIN.Motor01.HMI.Mode.Config.Pos4_Label
+               └── Pos5_Label (STRING(40)) → MAIN.Motor01.HMI.Mode.Config.Pos5_Label
+               └── Pos6_Label (STRING(40)) → MAIN.Motor01.HMI.Mode.Config.Pos6_Label
+               └── Pos7_Label (STRING(40)) → MAIN.Motor01.HMI.Mode.Config.Pos7_Label
+          └── Display (ST_DisplayConfig) → MAIN.Motor01.HMI.Mode.Display
+               └── DisplayName (STRING(60)) → MAIN.Motor01.HMI.Mode.Display.DisplayName
+               └── Description (STRING(120)) → MAIN.Motor01.HMI.Mode.Display.Description
+               └── Visible (BOOL) → MAIN.Motor01.HMI.Mode.Display.Visible
+               └── ReadOnly (BOOL) → MAIN.Motor01.HMI.Mode.Display.ReadOnly
+          └── PositionChanged (BOOL) → MAIN.Motor01.HMI.Mode.PositionChanged
+          └── LastUpdateTime (DATE_AND_TIME) → MAIN.Motor01.HMI.Mode.LastUpdateTime
+     └── Fault (ST_HMI_Alarm) → MAIN.Motor01.HMI.Fault
+          └── Active (BOOL) → MAIN.Motor01.HMI.Fault.Active
+          └── AlarmText (STRING(80)) → MAIN.Motor01.HMI.Fault.AlarmText
+          └── AlarmPriority (USINT) → MAIN.Motor01.HMI.Fault.AlarmPriority
+          └── Display (ST_DisplayConfig) → MAIN.Motor01.HMI.Fault.Display
+               └── DisplayName (STRING(60)) → MAIN.Motor01.HMI.Fault.Display.DisplayName
+               └── Description (STRING(120)) → MAIN.Motor01.HMI.Fault.Display.Description
+               └── Visible (BOOL) → MAIN.Motor01.HMI.Fault.Display.Visible
+               └── ReadOnly (BOOL) → MAIN.Motor01.HMI.Fault.Display.ReadOnly
+          └── Acknowledged (BOOL) → MAIN.Motor01.HMI.Fault.Acknowledged
+          └── TriggerTime (DATE_AND_TIME) → MAIN.Motor01.HMI.Fault.TriggerTime
+          └── AckTime (DATE_AND_TIME) → MAIN.Motor01.HMI.Fault.AckTime
+          └── TriggerCount (UDINT) → MAIN.Motor01.HMI.Fault.TriggerCount
+
+
+MAIN.Sensor01 (ST_ProcessValue)
+└── Value (REAL) → MAIN.Sensor01.Value
+└── HMI (ST_HMI_ProcessValue) → MAIN.Sensor01.HMI
+     └── Value (REAL) → MAIN.Sensor01.HMI.Value
+     └── Config (ST_NumericConfig) → MAIN.Sensor01.HMI.Config
+          └── Unit (STRING(20)) → MAIN.Sensor01.HMI.Config.Unit
+          └── nMin (REAL) → MAIN.Sensor01.HMI.Config.nMin
+          └── nMax (REAL) → MAIN.Sensor01.HMI.Config.nMax
+          └── Decimals (USINT) → MAIN.Sensor01.HMI.Config.Decimals
+          └── Step (REAL) → MAIN.Sensor01.HMI.Config.Step
+     └── AlarmLimits (ST_AlarmLimits) → MAIN.Sensor01.HMI.AlarmLimits
+          └── AlarmHighHigh (REAL) → MAIN.Sensor01.HMI.AlarmLimits.AlarmHighHigh
+          └── AlarmHigh (REAL) → MAIN.Sensor01.HMI.AlarmLimits.AlarmHigh
+          └── AlarmLow (REAL) → MAIN.Sensor01.HMI.AlarmLimits.AlarmLow
+          └── AlarmLowLow (REAL) → MAIN.Sensor01.HMI.AlarmLimits.AlarmLowLow
+          └── AlarmPriority (USINT) → MAIN.Sensor01.HMI.AlarmLimits.AlarmPriority
+          └── AlarmActive (BOOL) → MAIN.Sensor01.HMI.AlarmLimits.AlarmActive
+          └── WarningActive (BOOL) → MAIN.Sensor01.HMI.AlarmLimits.WarningActive
+          └── AlarmText (STRING(80)) → MAIN.Sensor01.HMI.AlarmLimits.AlarmText
+          └── Hysteresis (REAL) → MAIN.Sensor01.HMI.AlarmLimits.Hysteresis
+     └── Display (ST_DisplayConfig) → MAIN.Sensor01.HMI.Display
+          └── DisplayName (STRING(60)) → MAIN.Sensor01.HMI.Display.DisplayName
+          └── Description (STRING(120)) → MAIN.Sensor01.HMI.Display.Description
+          └── Visible (BOOL) → MAIN.Sensor01.HMI.Display.Visible
+          └── ReadOnly (BOOL) → MAIN.Sensor01.HMI.Display.ReadOnly
+     └── Quality (USINT) → MAIN.Sensor01.HMI.Quality
+     └── SensorFault (BOOL) → MAIN.Sensor01.HMI.SensorFault
+     └── LastUpdateTime (DATE_AND_TIME) → MAIN.Sensor01.HMI.LastUpdateTime
+
